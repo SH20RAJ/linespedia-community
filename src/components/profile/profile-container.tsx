@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR from "swr";
 import { useUser, useHexclaveApp } from "@hexclave/next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -19,50 +19,47 @@ interface ProfileContainerProps {
 }
 
 export function ProfileContainer({ username }: ProfileContainerProps) {
-  const queryClient = useQueryClient();
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
 
-  // Fetch db user profile info
-  const { data: profileResult, isLoading: isProfileLoading, error: profileError } = useQuery({
-    queryKey: ["profile", username],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/users/${username}`);
+  // Fetch db user profile info using SWR
+  const { data: profileResult, isLoading: isProfileLoading, error: profileError, mutate: mutateProfile } = useSWR(
+    `/api/v1/users/${username}`,
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("User not found");
       const json = (await res.json()) as any;
       return json.data;
-    },
-  });
+    }
+  );
 
   const profile = profileResult;
 
-  // Fetch writings of this user
-  const { data: writingsResult, isLoading: isWritingsLoading } = useQuery({
-    queryKey: ["user-writings", profile?.id],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?query=&limit=50`); // get writings
+  // Fetch writings of this user using SWR
+  const { data: writingsResult, isLoading: isWritingsLoading } = useSWR(
+    profile?.id ? `/api/v1/writings?query=&limit=50` : null,
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load writings");
       const json = (await res.json()) as any;
       // Filter locally for this user
       return (json.data || []).filter((w: any) => w.userId === profile.id);
-    },
-    enabled: !!profile?.id,
-  });
+    }
+  );
 
   const posts = writingsResult || [];
 
-  // Follow/Unfollow Mutation
-  const followMutation = useMutation({
-    mutationFn: async () => {
+  const handleFollow = async () => {
+    try {
       const res = await fetch(`/api/v1/users/${profile.id}/follow`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to follow");
-      return res.json();
-    },
-    onSuccess: (data: any) => {
+      const data = await res.json() as any;
       toast.success(data.following ? `Followed @${profile.username}` : `Unfollowed @${profile.username}`);
-      queryClient.invalidateQueries({ queryKey: ["profile", username] });
-    },
-  });
+      mutateProfile();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to follow");
+    }
+  };
 
   if (isProfileLoading) {
     return (
@@ -133,7 +130,7 @@ export function ProfileContainer({ username }: ProfileContainerProps) {
                   hexclaveApp.redirectToSignIn();
                   return;
                 }
-                followMutation.mutate();
+                handleFollow();
               }}
               className="text-xs"
             >

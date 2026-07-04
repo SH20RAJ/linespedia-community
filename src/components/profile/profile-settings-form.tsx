@@ -3,34 +3,26 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@hexclave/next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import useSWR, { mutate as globalMutate } from "swr";
 
 export function ProfileSettingsForm() {
   const hexclaveUser = useUser({ or: "redirect" });
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [displayName, setDisplayName] = React.useState("");
   const [username, setUsername] = React.useState("");
   const [bio, setBio] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Fetch db user profile info
-  const { data: meResult, isLoading } = useQuery({
-    queryKey: ["me", hexclaveUser?.id],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/users/me");
-      if (!res.ok) throw new Error("Not logged in");
-      const json = (await res.json()) as any;
-      return json.data;
-    },
-    enabled: !!hexclaveUser,
-  });
+  // Fetch db user profile info using SWR
+  const { data: meResult, isLoading, mutate } = useSWR(
+    hexclaveUser ? "/api/v1/users/me" : null
+  );
 
   React.useEffect(() => {
     if (meResult) {
@@ -69,8 +61,8 @@ export function ProfileSettingsForm() {
       }
 
       toast.success("Profile updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["me"] });
-      queryClient.invalidateQueries({ queryKey: ["profile", username] });
+      mutate();
+      globalMutate(`/api/v1/profile/${username}`);
     } catch (e: any) {
       toast.error(e.message || "Error updating profile");
     } finally {

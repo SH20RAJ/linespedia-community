@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR from "swr";
 import { useUser } from "@hexclave/next";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,24 +16,32 @@ interface ReviewsSectionProps {
 
 export function ReviewsSection({ writingId }: ReviewsSectionProps) {
   const hexclaveUser = useUser();
-  const queryClient = useQueryClient();
   const [rating, setRating] = React.useState(5);
   const [content, setContent] = React.useState("");
   const [hoverRating, setHoverRating] = React.useState<number | null>(null);
   const [sortBy, setSortBy] = React.useState("newest"); // newest, oldest, highest_rating, lowest_rating
   const [limit, setLimit] = React.useState(10);
 
-  const { data: reviewsData, isLoading } = useQuery({
-    queryKey: ["reviews", writingId, sortBy, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/writings/${writingId}/reviews?sortBy=${sortBy}&limit=${limit}`);
+  const { data: reviewsData, isLoading, mutate } = useSWR(
+    `/api/v1/writings/${writingId}/reviews?sortBy=${sortBy}&limit=${limit}`,
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load reviews");
       return (await res.json()) as any;
-    },
-  });
+    }
+  );
 
-  const submitMutation = useMutation({
-    mutationFn: async () => {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!hexclaveUser) {
+      toast.error("Please log in to submit a review");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
       const res = await fetch(`/api/v1/writings/${writingId}/reviews`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -43,25 +51,14 @@ export function ReviewsSection({ writingId }: ReviewsSectionProps) {
         const json = await res.json() as any;
         throw new Error(json.error || "Failed to submit review");
       }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["reviews", writingId] });
       setContent("");
       toast.success("Review submitted successfully!");
-    },
-    onError: (e: any) => {
+      mutate();
+    } catch (e: any) {
       toast.error(e.message || "Error submitting review");
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!hexclaveUser) {
-      toast.error("Please log in to submit a review");
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-    submitMutation.mutate();
   };
 
   const reviewsList = reviewsData?.data || [];
@@ -86,35 +83,34 @@ export function ReviewsSection({ writingId }: ReviewsSectionProps) {
 
       {hexclaveUser ? (
         <form onSubmit={handleSubmit} className="space-y-4 border border-border/40 p-4 bg-muted/5">
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Your Rating
-            </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold uppercase text-muted-foreground">Rating:</span>
             <div className="flex items-center gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
-                  key={star}
                   type="button"
+                  key={star}
                   onClick={() => setRating(star)}
                   onMouseEnter={() => setHoverRating(star)}
                   onMouseLeave={() => setHoverRating(null)}
-                  className="p-1 focus:outline-hidden transition-colors"
+                  className="text-amber-500 hover:scale-110 transition-transform focus:outline-none"
                 >
                   <Star
                     className={`h-5 w-5 ${
-                      star <= (hoverRating ?? rating)
-                        ? "text-amber-500 fill-amber-500"
-                        : "text-muted-foreground/30"
+                      star <= (hoverRating ?? rating) ? "fill-amber-500 stroke-amber-500" : "text-muted-foreground/30"
                     }`}
                   />
                 </button>
               ))}
             </div>
+            <span className="text-xs font-bold font-mono ml-2">
+              {rating} / 5
+            </span>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-              Your Review (Optional)
+              Review Content (Optional)
             </span>
             <Textarea
               placeholder="What did you feel reading this piece? Share your review..."
@@ -124,8 +120,8 @@ export function ReviewsSection({ writingId }: ReviewsSectionProps) {
             />
           </div>
 
-          <Button type="submit" size="sm" className="text-xs" disabled={submitMutation.isPending}>
-            {submitMutation.isPending ? "Submitting..." : "Submit Review"}
+          <Button type="submit" size="sm" className="text-xs" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting..." : "Submit Review"}
           </Button>
         </form>
       ) : (

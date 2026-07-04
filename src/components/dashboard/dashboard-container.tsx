@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR from "swr";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,37 +13,32 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 export function DashboardContainer() {
-  const queryClient = useQueryClient();
   const [draftTitle, setDraftTitle] = React.useState("");
   const [draftEmotion, setDraftEmotion] = React.useState("love");
   const [draftContent, setDraftContent] = React.useState("");
   const [isSavingDraft, setIsSavingDraft] = React.useState(false);
 
-  // Fetch dashboard stats & lists
-  const { data: dashboardResult, isLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/dashboard/stats");
+  // Fetch dashboard stats & lists using SWR
+  const { data: dashboardResult, isLoading, mutate } = useSWR(
+    "/api/v1/dashboard/stats",
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Unauthorized");
       const json = await res.json() as any;
       return json.data;
-    },
-  });
+    }
+  );
 
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const handleDelete = async (id: string) => {
+    try {
       const res = await fetch(`/api/v1/writings/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete writing");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       toast.success("Writing deleted successfully.");
-    },
-    onError: (e: any) => {
+      mutate();
+    } catch (e: any) {
       toast.error(e.message || "Error deleting writing");
-    },
-  });
+    }
+  };
 
   const handleQuickDraft = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,7 +65,7 @@ export function DashboardContainer() {
       toast.success("Quick draft saved!");
       setDraftTitle("");
       setDraftContent("");
-      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      mutate();
     } catch {
       toast.error("Failed to save quick draft");
     } finally {
@@ -175,7 +170,7 @@ export function DashboardContainer() {
                         <button
                           onClick={() => {
                             if (confirm("Are you sure you want to delete this writing?")) {
-                              deleteMutation.mutate(writing.id);
+                              handleDelete(writing.id);
                             }
                           }}
                           className="p-1.5 border border-border/60 hover:bg-red-500/10 transition-colors cursor-pointer"

@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useUser, useHexclaveApp } from "@hexclave/next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR from "swr";
 import { toast } from "sonner";
 import { MessageSquare, CornerDownRight, Trash2, Heart, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -15,7 +15,6 @@ interface CommentsProps {
 }
 
 export function CommentsSection({ writingId }: CommentsProps) {
-  const queryClient = useQueryClient();
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
   const [commentText, setCommentText] = React.useState("");
@@ -24,60 +23,57 @@ export function CommentsSection({ writingId }: CommentsProps) {
   const [sortBy, setSortBy] = React.useState("newest"); // newest, oldest, popular
   const [limit, setLimit] = React.useState(10);
 
-  const { data: commentsData, isLoading } = useQuery({
-    queryKey: ["comments", writingId, sortBy, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/comments?writingId=${writingId}&sortBy=${sortBy}&limit=${limit}`);
+  const { data: commentsData, isLoading, mutate } = useSWR(
+    `/api/v1/comments?writingId=${writingId}&sortBy=${sortBy}&limit=${limit}`,
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load comments");
       return (await res.json()) as any;
-    },
-  });
+    }
+  );
 
-  const likeMutation = useMutation({
-    mutationFn: async (commentId: string) => {
+  const comments = commentsData?.data || [];
+
+  const handleLike = async (commentId: string) => {
+    try {
       const res = await fetch(`/api/v1/comments/${commentId}/like`, {
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to like comment");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", writingId] });
-    },
-  });
+      mutate();
+    } catch (e: any) {
+      toast.error(e.message || "Failed to like comment");
+    }
+  };
 
-  const comments = commentsData?.data || [];
-
-  const postMutation = useMutation({
-    mutationFn: async ({ content, parentId }: { content: string; parentId?: string | null }) => {
+  const handlePost = async ({ content, parentId }: { content: string; parentId?: string | null }) => {
+    try {
       const res = await fetch("/api/v1/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ writingId, content, parentId }),
       });
       if (!res.ok) throw new Error("Failed to post comment");
-      return res.json();
-    },
-    onSuccess: () => {
       setCommentText("");
       setReplyText("");
       setReplyToId(null);
-      queryClient.invalidateQueries({ queryKey: ["comments", writingId] });
       toast.success("Comment posted!");
-    },
-  });
+      mutate();
+    } catch (e) {
+      toast.error("Failed to post comment");
+    }
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: async (commentId: string) => {
+  const handleDelete = async (commentId: string) => {
+    try {
       const res = await fetch(`/api/v1/comments/${commentId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete comment");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["comments", writingId] });
       toast.success("Comment deleted");
-    },
-  });
+      mutate();
+    } catch (e) {
+      toast.error("Failed to delete comment");
+    }
+  };
 
   const handlePostComment = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,12 +84,12 @@ export function CommentsSection({ writingId }: CommentsProps) {
       return;
     }
     if (!commentText.trim()) return;
-    postMutation.mutate({ content: commentText });
+    handlePost({ content: commentText });
   };
 
   const handlePostReply = (parentId: string) => {
     if (!replyText.trim()) return;
-    postMutation.mutate({ content: replyText, parentId });
+    handlePost({ content: replyText, parentId });
   };
 
   const CommentItem = ({ comment, isReply = false }: { comment: any; isReply?: boolean }) => {
@@ -123,7 +119,11 @@ export function CommentsSection({ writingId }: CommentsProps) {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => deleteMutation.mutate(comment.id)}
+              onClick={() => {
+                if (confirm("Are you sure?")) {
+                  handleDelete(comment.id);
+                }
+              }}
               className="h-6 w-6 p-0 text-muted-foreground hover:text-red-500"
             >
               <Trash2 className="h-3.5 w-3.5" />
@@ -140,7 +140,7 @@ export function CommentsSection({ writingId }: CommentsProps) {
                 toast.error("Please sign in to like comments");
                 return;
               }
-              likeMutation.mutate(comment.id);
+              handleLike(comment.id);
             }}
             className={`flex items-center gap-1.5 text-[10px] font-mono transition-colors ${
               comment.hasLiked ? "text-rose-500 font-bold" : "text-muted-foreground hover:text-foreground"

@@ -3,33 +3,31 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@hexclave/next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import useSWR from "swr";
 
 export function SocialSettingsForm() {
   const hexclaveUser = useUser({ or: "redirect" });
   const router = useRouter();
-  const queryClient = useQueryClient();
 
   const [website, setWebsite] = React.useState("");
   const [twitter, setTwitter] = React.useState("");
   const [github, setGithub] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
-  // Fetch db user profile info
-  const { data: meResult, isLoading } = useQuery({
-    queryKey: ["me", hexclaveUser?.id],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/users/me");
+  // Fetch db user profile info using SWR
+  const { data: meResult, isLoading, mutate } = useSWR(
+    hexclaveUser ? "/api/v1/users/me" : null,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Not logged in");
       const json = (await res.json()) as any;
       return json.data;
-    },
-    enabled: !!hexclaveUser,
-  });
+    }
+  );
 
   React.useEffect(() => {
     if (meResult) {
@@ -44,7 +42,7 @@ export function SocialSettingsForm() {
 
     // Strict URL handle validations
     if (twitter && (twitter.includes("/") || twitter.includes("http"))) {
-      toast.error("Please enter only your Twitter handle/username, not the full URL");
+      toast.error("Please enter only your Twitter handle, not the full URL");
       return;
     }
     if (github && (github.includes("/") || github.includes("http"))) {
@@ -77,7 +75,7 @@ export function SocialSettingsForm() {
       }
 
       toast.success("Social accounts updated successfully!");
-      queryClient.invalidateQueries({ queryKey: ["me"] });
+      mutate();
     } catch (e: any) {
       toast.error(e.message || "Error updating socials");
     } finally {

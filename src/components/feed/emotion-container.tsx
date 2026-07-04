@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { PostCard } from "@/components/feed/post-card";
 import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,55 +19,59 @@ interface EmotionContainerProps {
 const SUPPORTED_LANGUAGES = [
   { code: "", label: "ALL LANGUAGES" },
   { code: "en", label: "ENGLISH" },
-  { code: "bn", label: "BANGLA" },
-  { code: "ta", label: "TAMIL" },
-  { code: "te", label: "TELUGU" },
+  { code: "es", label: "SPANISH" },
   { code: "hi", label: "HINDI" },
-  { code: "ur", label: "URDU" },
+  { code: "bn", label: "BANGLA" },
   { code: "ar", label: "ARABIC" },
+  { code: "fr", label: "FRENCH" },
   { code: "de", label: "GERMAN" },
 ];
 
 export function EmotionContainer({ emotion }: EmotionContainerProps) {
   const [feedType, setFeedType] = React.useState("latest"); // latest, trending
   const [selectedLang, setSelectedLang] = React.useState("");
-  const [limit, setLimit] = React.useState(10);
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
-  // Fetch writings with sorting & language filters
-  const { data: writingsResult, isLoading, error } = useQuery({
-    queryKey: ["writings-emotion", emotion, feedType, selectedLang, limit],
-    queryFn: async () => {
-      const url = `/api/v1/writings?emotion=${emotion}&feedType=${feedType}${
-        selectedLang ? `&language=${selectedLang}` : ""
-      }&limit=${limit}`;
+  // Fetch writings with sorting & language filters using SWRInfinite
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.length) return null;
+    return `/api/v1/writings?emotion=${emotion}&feedType=${feedType}${
+      selectedLang ? `&language=${selectedLang}` : ""
+    }&limit=10&offset=${pageIndex * 10}`;
+  };
+
+  const { data, size, setSize, isValidating, isLoading, error } = useSWRInfinite(
+    getKey,
+    async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load emotion writings");
       const json = (await res.json()) as any;
-      return json.data;
-    },
-  });
+      return json.data || [];
+    }
+  );
 
-  // Fetch top authors for this emotion
-  const { data: topAuthorsResult, isLoading: isLoadingAuthors } = useQuery({
-    queryKey: ["top-authors", emotion],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/users/top?emotion=${emotion}`);
+  // Fetch top authors for this emotion using SWR
+  const { data: topAuthorsResult, isLoading: isLoadingAuthors } = useSWR(
+    `/api/v1/users/top?emotion=${emotion}`,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load top authors");
       const json = (await res.json()) as any;
-      return json.data;
-    },
-  });
+      return json.data || [];
+    }
+  );
 
-  const posts = writingsResult || [];
+  const posts = data ? data.flat() : [];
   const topAuthors = topAuthorsResult || [];
   const badgeStyle = getEmotionBadgeStyles(emotion);
+  const hasNextPage = data && data[data.length - 1]?.length === 10;
+  const isFetchingNextPage = isValidating && size > 1;
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && posts.length >= limit && !isLoading) {
-          setLimit((prev) => prev + 10);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          setSize((prev) => prev + 1);
         }
       },
       { threshold: 0.1 }
@@ -77,7 +82,7 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
     }
 
     return () => observer.disconnect();
-  }, [posts.length, limit, isLoading]);
+  }, [hasNextPage, isFetchingNextPage, setSize]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -105,14 +110,14 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
               <span className="font-bold flex items-center gap-1"><SortAsc className="h-3 w-3" /> FEED:</span>
               <button
                 type="button"
-                onClick={() => { setFeedType("latest"); setLimit(10); }}
+                onClick={() => { setFeedType("latest"); }}
                 className={`hover:text-foreground uppercase cursor-pointer ${feedType === "latest" ? "font-bold text-foreground underline" : ""}`}
               >
                 LATEST
               </button>
               <button
                 type="button"
-                onClick={() => { setFeedType("trending"); setLimit(10); }}
+                onClick={() => { setFeedType("trending"); }}
                 className={`hover:text-foreground uppercase cursor-pointer ${feedType === "trending" ? "font-bold text-foreground underline" : ""}`}
               >
                 TRENDING
@@ -124,7 +129,7 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
               <span className="font-bold flex items-center gap-1 whitespace-nowrap"><Globe className="h-3 w-3" /> LANGUAGE:</span>
               <select
                 value={selectedLang}
-                onChange={(e) => { setSelectedLang(e.target.value); setLimit(10); }}
+                onChange={(e) => { setSelectedLang(e.target.value); }}
                 className="bg-background border border-border/60 text-[10px] py-1 px-2 font-bold uppercase w-full sm:w-auto focus:outline-none focus:ring-1 focus:ring-primary"
               >
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -137,7 +142,7 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
           </div>
 
           {/* Writings feed */}
-          {isLoading && limit === 10 ? (
+          {isLoading && posts.length === 0 ? (
             <div className="space-y-4">
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-24 w-full" />
@@ -157,7 +162,7 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
               ))}
               
               <div ref={observerTarget} className="flex justify-center py-6">
-                {posts.length >= limit ? (
+                {hasNextPage ? (
                   <span className="text-[10px] font-mono text-muted-foreground animate-pulse uppercase tracking-widest">
                     Loading more lines...
                   </span>

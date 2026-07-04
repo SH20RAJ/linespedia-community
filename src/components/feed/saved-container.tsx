@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useUser } from "@hexclave/next";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 import { PostCard } from "@/components/feed/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -14,16 +14,15 @@ export function SavedContainer() {
   const [folder, setFolder] = React.useState("All");
   const [search, setSearch] = React.useState("");
 
-  const { data: bookmarksResult, isLoading } = useQuery({
-    queryKey: ["bookmarks"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/bookmarks");
+  const { data: bookmarksResult, isLoading } = useSWR(
+    hexclaveUser ? "/api/v1/bookmarks" : null,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load bookmarks");
       const json = (await res.json()) as any;
       return json.data || [];
-    },
-    enabled: !!hexclaveUser,
-  });
+    }
+  );
 
   const bookmarkedWritings = bookmarksResult || [];
 

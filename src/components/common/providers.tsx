@@ -1,21 +1,16 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { SWRConfig } from "swr";
+
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Fetch error");
+  const json = await res.json() as any;
+  return json.data ?? json;
+};
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(
-    () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 1000 * 60, // 1 minute
-            refetchOnWindowFocus: false,
-          },
-        },
-      })
-  );
-
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
       navigator.serviceWorker
@@ -26,8 +21,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <SWRConfig
+      value={{
+        fetcher,
+        revalidateOnFocus: false,
+        dedupingInterval: 10000,
+      }}
+    >
       {children}
-    </QueryClientProvider>
+    </SWRConfig>
   );
 }

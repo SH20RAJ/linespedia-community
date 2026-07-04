@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 import { PostCard } from "@/components/feed/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Globe } from "lucide-react";
@@ -27,18 +27,17 @@ interface LanguageContainerProps {
 
 export function LanguageContainer({ lang }: LanguageContainerProps) {
   const languageName = LANG_NAMES[lang] || lang;
-
   const [limit, setLimit] = React.useState(10);
 
-  const { data: writingsResult, isLoading } = useQuery({
-    queryKey: ["writings-lang", lang, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?language=${lang}&limit=${limit}`);
+  const { data: writingsResult, isLoading } = useSWR(
+    `/api/v1/writings?language=${lang}&limit=${limit}`,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load language writings");
       const json = (await res.json()) as any;
       return json.data;
-    },
-  });
+    }
+  );
 
   const posts = writingsResult || [];
 

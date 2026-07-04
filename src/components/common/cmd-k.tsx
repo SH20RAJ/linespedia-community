@@ -13,7 +13,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { FileText, User, Settings, PenTool, Sparkles, BookMarked, Bell } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 
 const EMOTIONS = [
   { name: "Love", slug: "love", color: "text-rose-500" },
@@ -47,21 +47,15 @@ export function CmdKDialog() {
     return () => document.removeEventListener("keydown", down);
   }, [isCmdKOpen, setCmdKOpen]);
 
-  // Fetch search results from Hono API
-  const { data: searchResults } = useQuery({
-    queryKey: ["search", search],
-    queryFn: async () => {
-      if (!search.trim()) return { posts: [], users: [] };
-      // Search posts
-      const resPosts = await fetch(`/api/v1/writings?query=${encodeURIComponent(search)}&limit=5`);
-      const postsData = await resPosts.json() as any;
-      
-      // We can also search users by hitting an API or doing a query.
-      // For now we get posts data
+  // Fetch search results from Hono API using SWR
+  const { data: searchResults } = useSWR(
+    search.length > 1 ? `/api/v1/writings?query=${encodeURIComponent(search)}&limit=5` : null,
+    async (url) => {
+      const res = await fetch(url);
+      const postsData = await res.json() as any;
       return { posts: postsData.data || [], users: [] };
-    },
-    enabled: search.length > 1,
-  });
+    }
+  );
 
   const runCommand = React.useCallback(
     (command: () => void) => {

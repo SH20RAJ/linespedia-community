@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 import { PostCard } from "@/components/feed/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Hash } from "lucide-react";
@@ -13,18 +13,17 @@ interface TagContainerProps {
 
 export function TagContainer({ tag }: TagContainerProps) {
   const decodedTag = decodeURIComponent(tag);
-
   const [limit, setLimit] = React.useState(10);
 
-  const { data: writingsResult, isLoading } = useQuery({
-    queryKey: ["writings-tag", decodedTag, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?tag=${encodeURIComponent(decodedTag.startsWith("#") ? decodedTag : `#${decodedTag}`)}&limit=${limit}`);
+  const { data: writingsResult, isLoading } = useSWR(
+    `/api/v1/writings?tag=${encodeURIComponent(decodedTag.startsWith("#") ? decodedTag : `#${decodedTag}`)}&limit=${limit}`,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load tag writings");
       const json = (await res.json()) as any;
       return json.data;
-    },
-  });
+    }
+  );
 
   const posts = writingsResult || [];
 

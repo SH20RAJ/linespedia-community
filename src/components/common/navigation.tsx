@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUIStore } from "@/lib/store";
 import { useUser, useHexclaveApp } from "@hexclave/next";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 import { Search, PenTool, Sparkles, User, Settings, LogOut, BookMarked, Bell, FileText, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,18 +25,16 @@ export function Navigation() {
   const hexclaveUser = useUser();
   const { setCmdKOpen } = useUIStore();
 
-  // Fetch db user profile info (username, displayName, etc.)
-  const { data: meResult } = useQuery({
-    queryKey: ["me", hexclaveUser?.id],
-    queryFn: async () => {
-      if (!hexclaveUser) return null;
-      const res = await fetch("/api/v1/users/me");
+  // Fetch db user profile info (username, displayName, etc.) using SWR
+  const { data: meResult } = useSWR(
+    hexclaveUser ? "/api/v1/users/me" : null,
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) return null;
       const json = await res.json() as any;
       return json.data;
-    },
-    enabled: !!hexclaveUser,
-  });
+    }
+  );
 
   const dbUser = meResult;
 

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { PostCard } from "@/components/feed/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,39 +15,34 @@ interface HomeFeedProps {
   initialFeedType?: "latest" | "trending" | "following" | "for-you";
 }
 
-export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
+export function HomeFeed({ initialFeedType = "trending" }: HomeFeedProps) {
   const [feedType, setFeedType] = React.useState(initialFeedType);
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isLoading,
-    error,
-  } = useInfiniteQuery({
-    queryKey: ["writings", feedType],
-    queryFn: async ({ pageParam = 0 }) => {
-      const res = await fetch(`/api/v1/writings?feedType=${feedType}&limit=10&offset=${pageParam}`);
-      if (!res.ok) throw new Error("Failed to fetch writings");
-      const json = (await res.json()) as any;
-      return json.data;
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length < 10) return undefined;
-      return allPages.length * 10;
-    },
-  });
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.length) return null;
+    return `/api/v1/writings?feedType=${feedType}&limit=10&offset=${pageIndex * 10}`;
+  };
 
-  const posts = data ? data.pages.flatMap((page) => page) : [];
+  const { data, error, size, setSize, isValidating, isLoading } = useSWRInfinite(
+    getKey,
+    async (url: string) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch writings");
+      const json = await res.json() as any;
+      return json.data || [];
+    }
+  );
+
+  const posts = data ? data.flat() : [];
+  const hasNextPage = data && data[data.length - 1]?.length === 10;
+  const isFetchingNextPage = isValidating && size > 1;
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
-          fetchNextPage();
+          setSize((prev) => prev + 1);
         }
       },
       { threshold: 0.1 }
@@ -57,7 +53,7 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
     }
 
     return () => observer.disconnect();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  }, [hasNextPage, isFetchingNextPage, setSize]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -80,8 +76,8 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
 
           <Tabs value={feedType} onValueChange={setFeedType} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted/20">
-              <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
               <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
+              <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
               <TabsTrigger value="following" className="text-xs">Following</TabsTrigger>
               <TabsTrigger value="for-you" className="text-xs">For You</TabsTrigger>
             </TabsList>
@@ -243,15 +239,15 @@ function RandomLinesWidget() {
 }
 
 function TopWritersWidget() {
-  const { data: topAuthorsResult, isLoading } = useQuery({
-    queryKey: ["home-top-authors"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/users/top");
+  const { data: topAuthorsResult, isLoading } = useSWR(
+    "/api/v1/users/top",
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error();
       const json = await res.json() as any;
       return json.data || [];
-    },
-  });
+    }
+  );
 
   const authors = topAuthorsResult || [];
 
@@ -293,15 +289,15 @@ function TopWritersWidget() {
 }
 
 function RecentInteractionsWidget() {
-  const { data: commentsResult, isLoading } = useQuery({
-    queryKey: ["home-recent-comments"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/interactions/recent");
+  const { data: commentsResult, isLoading } = useSWR(
+    "/api/v1/interactions/recent",
+    async (url) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error();
       const json = await res.json() as any;
       return json.data || [];
-    },
-  });
+    }
+  );
 
   const comments = commentsResult || [];
 

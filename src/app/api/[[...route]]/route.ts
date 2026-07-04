@@ -1070,14 +1070,68 @@ app.post("/admin/seed", async (c) => {
       });
     }
 
+    // 5 New seed writers
+    const seedWriters = [
+      {
+        id: "writer-tagore",
+        username: "tagore_devotee",
+        displayName: "Tagore Devotee",
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=tagore",
+        bio: "Explorer of Gitanjali, Bangla verses, and spiritual love.",
+      },
+      {
+        id: "writer-byron",
+        username: "byron_shadow",
+        displayName: "Byron Shadow",
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=byron",
+        bio: "Dark romanticist, capturing melancholic shadows and gothic lines.",
+      },
+      {
+        id: "writer-rumi",
+        username: "rumi_spirit",
+        displayName: "Rumi Spirit",
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=rumi",
+        bio: "Whirling dervish of mystic love, gratitude, and divine connection.",
+      },
+      {
+        id: "writer-faiz",
+        username: "faiz_voice",
+        displayName: "Faiz Voice",
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=faiz",
+        bio: "Poet of revolutionary angst, Urdu ghazals, and motivation.",
+      },
+      {
+        id: "writer-goethe",
+        username: "goethe_soul",
+        displayName: "Goethe Soul",
+        avatar: "https://api.dicebear.com/7.x/adventurer/svg?seed=goethe",
+        bio: "Sturm und Drang philosopher writing classic German and international ballads.",
+      },
+    ];
+
+    for (const writer of seedWriters) {
+      const [existing] = await db.select().from(users).where(eq(users.id, writer.id));
+      if (!existing) {
+        await db.insert(users).values({
+          ...writer,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+    }
+
+    const writerIds = [seedUserId, ...seedWriters.map((w) => w.id)];
+
     let seededCount = 0;
-    for (const post of seedWritings) {
+    for (let index = 0; index < seedWritings.length; index++) {
+      const post = seedWritings[index];
       const slug = post.title.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const [existingPost] = await db.select().from(writings).where(eq(writings.slug, slug));
       if (!existingPost) {
+        const assignedUserId = writerIds[index % writerIds.length];
         await db.insert(writings).values({
           id: crypto.randomUUID(),
-          userId: seedUserId,
+          userId: assignedUserId,
           title: post.title,
           slug,
           content: post.content,
@@ -1086,6 +1140,7 @@ app.post("/admin/seed", async (c) => {
           readingTime: post.readingTime,
           tags: post.tags,
           isDraft: false,
+          views: Math.floor(Math.random() * 200) + 10,
           publishedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date(),

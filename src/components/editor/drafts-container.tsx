@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useUser } from "@hexclave/next";
-import { useQuery } from "@tanstack/react-query";
+import useSWR from "swr";
 import { useDraftStore } from "@/lib/store";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,18 +16,17 @@ export function DraftsContainer() {
   const hexclaveUser = useUser({ or: "redirect" });
   const { drafts, removeDraft } = useDraftStore();
 
-  // Fetch backend drafts
-  const { data: draftsResult, isLoading, refetch } = useQuery({
-    queryKey: ["backend-drafts"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/writings?query=&limit=50");
+  // Fetch backend drafts using SWR
+  const { data: draftsResult, isLoading, mutate } = useSWR(
+    hexclaveUser ? "/api/v1/writings?query=&limit=50" : null,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load drafts");
       const json = (await res.json()) as any;
       // Filter for current user's drafts
       return (json.data || []).filter((w: any) => w.userId === hexclaveUser?.id && w.isDraft);
-    },
-    enabled: !!hexclaveUser,
-  });
+    }
+  );
 
   const backendDrafts = draftsResult || [];
   const localDraftList = Object.entries(drafts).map(([id, draft]) => ({ id, ...draft }));
@@ -37,7 +36,7 @@ export function DraftsContainer() {
       const res = await fetch(`/api/v1/writings/${id}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete draft");
       toast.success("Draft deleted");
-      refetch();
+      mutate();
     } catch (e) {
       toast.error("Error deleting draft");
     }

@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
+import useSWR from "swr";
 import { useUser } from "@hexclave/next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,31 +12,28 @@ import Link from "next/link";
 
 export function NotificationsContainer() {
   const hexclaveUser = useUser({ or: "redirect" });
-  const queryClient = useQueryClient();
 
-  const { data: notificationsResult, isLoading } = useQuery({
-    queryKey: ["notifications"],
-    queryFn: async () => {
-      const res = await fetch("/api/v1/notifications");
+  const { data: notificationsResult, isLoading, mutate } = useSWR(
+    hexclaveUser ? "/api/v1/notifications" : null,
+    async (url: string) => {
+      const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load notifications");
       const json = (await res.json()) as any;
       return json.data;
-    },
-    enabled: !!hexclaveUser,
-  });
+    }
+  );
 
   const list = notificationsResult || [];
 
-  const readMutation = useMutation({
-    mutationFn: async (id: string) => {
+  const handleMarkRead = async (id: string) => {
+    try {
       const res = await fetch(`/api/v1/notifications/${id}/read`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to mark read");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notifications"] });
-    },
-  });
+      mutate();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const getNotificationDetails = (n: any) => {
     switch (n.type) {
@@ -110,7 +107,7 @@ export function NotificationsContainer() {
               <div
                 key={n.id}
                 onClick={() => {
-                  if (isUnread) readMutation.mutate(n.id);
+                  if (isUnread) handleMarkRead(n.id);
                 }}
                 className={`flex items-start justify-between gap-4 p-4 transition-colors ${
                   isUnread ? "bg-muted/15 font-bold" : "hover:bg-muted/5"
@@ -145,7 +142,7 @@ export function NotificationsContainer() {
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      readMutation.mutate(n.id);
+                      handleMarkRead(n.id);
                     }}
                     className="h-6 text-[9px] uppercase font-mono px-2 py-0 border"
                   >
