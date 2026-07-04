@@ -18,6 +18,12 @@ const LANGUAGES = [
   { code: "hi", name: "Hindi" },
   { code: "ur", name: "Urdu" },
   { code: "fr", name: "French" },
+  { code: "bn", name: "Bangla" },
+  { code: "pa", name: "Punjabi" },
+  { code: "ta", name: "Tamil" },
+  { code: "te", name: "Telugu" },
+  { code: "ar", name: "Arabic" },
+  { code: "de", name: "German" },
 ];
 
 export function CreateContainer() {

@@ -803,9 +803,15 @@ app.post("/admin/seed", async (c) => {
       { title: "Bol Ke Lab Azaad Hain Tere", primaryEmotion: "motivation", language: "ur", content: `<p>Bol ki lab aazaad hain tere,<br>Bol zabāñ ab tak terī hai.<br>Terā sutvāñ jism hai terā,<br>Bol ki jaañ ab tak terī hai.</p>`, readingTime: 1, tags: ["#faiz", "#motivation", "#shayari"] },
       { title: "Hum Dekhenge", primaryEmotion: "motivation", language: "ur", content: `<p>Hum dekhenge,<br>Lāzim hai ke hum bhī dekhenge.<br>Vo din ke jis kā vaada hai,<br>Jo lauh-e-azal pe likkhā hai.</p>`, readingTime: 2, tags: ["#faiz", "#protest", "#shayari"] },
       { title: "Where the Mind is Without Fear", primaryEmotion: "motivation", language: "en", content: `<p>Where the mind is without fear and the head is held high;<br>Where knowledge is free;<br>Where the world has not been broken up into fragments<br>By narrow domestic walls;</p>`, readingTime: 1, tags: ["#freedom", "#tagore", "#motivation"] },
+      { title: "Where the Mind is Without Fear (Gitanjali)", primaryEmotion: "hope", language: "bn", content: `<p>Chitto jetha bhayshunyo, uchcho jetha shir,<br>Gnyan jetha mukto, jetha griher prachir<br>Apon prangontole dibashbhabori<br>Bosundhare rakhe nai khondo khudra kori.</p>`, readingTime: 1, tags: ["#tagore", "#freedom", "#bengali"] },
+      { title: "Bullah Ki Jaana Main Kaun", primaryEmotion: "peace", language: "pa", content: `<p>Na main momin vich maseetān, na main vich kufar diān reetān,<br>Na main pākān vich paleetān, na main moosa na faraun.<br>Bullah ki jaana main kaun!</p>`, readingTime: 1, tags: ["#bullehshah", "#sufi", "#punjabi"] },
+      { title: "Thirukkural - Chapter on Love", primaryEmotion: "love", language: "ta", content: `<p>அன்பிலார் எல்லாம் தமக்குரியர் அன்புடையார்<br>என்பும் உரியர் பிறர்க்கு.<br>Anbilaar ellaam thamakuriyar anbudaikaar enbum uriyar pirarkku.</p>`, readingTime: 1, tags: ["#thiruvalluvar", "#love", "#tamil"] },
+      { title: "Vemana Neethi Shatakam", primaryEmotion: "peace", language: "te", content: `<p>Alpa buddhi vaniki adhikara micchina<br>Doddavalanu jampi tolagajeyu<br>Cheppu thinna kukka cheruku తీపి యెరుగునా?<br>Viswadabhirama vinura vema.</p>`, readingTime: 1, tags: ["#vemana", "#wisdom", "#telugu"] },
+      { title: "Al-Atlal (The Ruins)", primaryEmotion: "sad", language: "ar", content: `<p>يا فؤادي لا تسل أين الهوى<br>كان صرحاً من خيالٍ فهوى<br>اسقني واشرب على أطلاله<br>واروِ عني طالما الدمع روى</p>`, readingTime: 1, tags: ["#poetry", "#arabic", "#love"] },
+      { title: "Wandrers Nachtlied (Wanderer's Nightsong)", primaryEmotion: "peace", language: "de", content: `<p>Über allen Gipfeln<br>Ist Ruh,<br>In allen Wipfeln<br>Spürest du<br>Kaum einen Hauch;<br>Die Vögelein schweigen im Walde.<br>Warte nur, balde<br>Ruhest du auch.</p>`, readingTime: 1, tags: ["#goethe", "#peace", "#german"] },
     ];
 
-    const authors = ["Rumi", "Kabir", "Ghalib", "Wordsworth", "Tagore", "Emily Dickinson", "Robert Frost", "Shakespeare", "Neruda", "Baudelaire"];
+    const authors = ["Rumi", "Kabir", "Ghalib", "Wordsworth", "Tagore", "Emily Dickinson", "Robert Frost", "Shakespeare", "Neruda", "Baudelaire", "Bulleh Shah", "Thiruvalluvar", "Vemana", "Goethe"];
     const quotes = [
       { text: "What you seek is seeking you.", emotion: "hope", lang: "en", tags: ["#rumi", "#hope", "#spiritual"] },
       { text: "Only from the heart can you touch the sky.", emotion: "love", lang: "en", tags: ["#rumi", "#love", "#heart"] },
@@ -821,7 +827,13 @@ app.post("/admin/seed", async (c) => {
       { text: "Love all, trust a few, do wrong to none.", emotion: "peace", lang: "en", tags: ["#shakespeare", "#peace", "#wisdom"] },
       { text: "Puedo escribir los versos más tristes esta noche. Escribir, por ejemplo: 'La noche está estrellada, y tiritan, azules, los astros, a lo lejos.'", emotion: "sad", lang: "es", tags: ["#neruda", "#sad", "#poetry"] },
       { text: "Para mi corazón basta tu pecho, para tu libertad bastan mis alas.", emotion: "love", lang: "es", tags: ["#neruda", "#love", "#poetry"] },
-      { text: "Sois sage, ô ma Douleur, et tiens-toi plus tranquille. Tu réclamais le Soir; il descend; le voici.", emotion: "sad", lang: "fr", tags: ["#baudelaire", "#sad", "#poetry"] }
+      { text: "Sois sage, ô ma Douleur, et tiens-toi plus tranquille. Tu réclamais le Soir; il descend; le voici.", emotion: "sad", lang: "fr", tags: ["#baudelaire", "#sad", "#poetry"] },
+      { text: "Amader choto nodi chole bake bake, boishakh mashe tar hatu jol thake.", emotion: "nostalgia", lang: "bn", tags: ["#tagore", "#nostalgia", "#bengali"] },
+      { text: "Tere ishq nachaya kar ke thaiya thaiya.", emotion: "love", lang: "pa", tags: ["#bullehshah", "#love", "#sufi"] },
+      { text: "Keraladheepom or Tamilzhagam, language connects the hearts.", emotion: "peace", lang: "ta", tags: ["#culture", "#peace"] },
+      { text: "Kavitha oothu, telugu bhasha theeyadhanam.", emotion: "hope", lang: "te", tags: ["#poetry", "#telugu"] },
+      { text: "Ana uhibbuka ya habibi.", emotion: "love", lang: "ar", tags: ["#love", "#arabic"] },
+      { text: "Mehr Licht! (More light!)", emotion: "hope", lang: "de", tags: ["#goethe", "#hope", "#wisdom"] }
     ];
 
     // Seed 45 additional real distinct writings in different languages to exceed 50+ database writings
@@ -977,6 +989,56 @@ app.post("/writings/:writingId/reviews", async (c) => {
   }
 
   return c.json({ success: true, id: reviewId });
+});
+
+// Admin Moderation API Group
+app.get("/admin/writings", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const list = await db
+    .select({
+      id: writings.id,
+      title: writings.title,
+      slug: writings.slug,
+      primaryEmotion: writings.primaryEmotion,
+      language: writings.language,
+      createdAt: writings.createdAt,
+    })
+    .from(writings)
+    .orderBy(desc(writings.createdAt));
+
+  return c.json({ data: list });
+});
+
+app.delete("/admin/writings/:id", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const id = c.req.param("id");
+  await db.delete(writings).where(eq(writings.id, id));
+  return c.json({ success: true });
+});
+
+app.get("/admin/users", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const list = await db
+    .select()
+    .from(users)
+    .orderBy(desc(users.createdAt));
+
+  return c.json({ data: list });
+});
+
+app.delete("/admin/users/:id", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const id = c.req.param("id");
+  await db.delete(users).where(eq(users.id, id));
+  return c.json({ success: true });
 });
 
 export const GET = handle(app);

@@ -13,6 +13,12 @@ const LANG_NAMES: Record<string, string> = {
   hi: "Hindi",
   ur: "Urdu",
   fr: "French",
+  bn: "Bangla",
+  pa: "Punjabi",
+  ta: "Tamil",
+  te: "Telugu",
+  ar: "Arabic",
+  de: "German",
 };
 
 interface LanguageContainerProps {
