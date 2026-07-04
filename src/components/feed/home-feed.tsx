@@ -9,8 +9,12 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Activity, PlusCircle } from "lucide-react";
 import Link from "next/link";
 
-export function HomeFeed() {
-  const [feedType, setFeedType] = React.useState("latest");
+interface HomeFeedProps {
+  initialFeedType?: "latest" | "trending" | "following" | "for-you";
+}
+
+export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
+  const [feedType, setFeedType] = React.useState(initialFeedType);
   const [limit, setLimit] = React.useState(10);
 
   const { data: writingsResult, isLoading, error } = useQuery({

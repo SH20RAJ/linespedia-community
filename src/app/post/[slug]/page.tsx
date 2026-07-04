@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { writings, users, reactions, bookmarks, reviews } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +87,24 @@ export default async function PostPage({ params }: PostPageProps) {
     acc[curr.type] = Number(curr.count);
     return acc;
   }, {} as Record<string, number>);
+
+  // Fetch up to 3 related writings (same primaryEmotion, excluding current)
+  const related = await db
+    .select({
+      writing: writings,
+      author: users,
+    })
+    .from(writings)
+    .innerJoin(users, eq(writings.userId, users.id))
+    .where(
+      and(
+        eq(writings.primaryEmotion, result.writing.primaryEmotion),
+        eq(writings.isDraft, false),
+        sql`${writings.id} != ${result.writing.id}`
+      )
+    )
+    .orderBy(desc(writings.publishedAt))
+    .limit(3);
 
   // Query reviews
   const dbReviews = await db
@@ -220,6 +238,27 @@ export default async function PostPage({ params }: PostPageProps) {
 
         {/* Reviews Section */}
         <ReviewsSection writingId={result.writing.id} />
+
+        {/* Related Writings Section */}
+        {related.length > 0 && (
+          <div className="space-y-4 pt-6 border-t border-border/20 font-mono">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Related Writings ({result.writing.primaryEmotion})</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {related.map((item) => (
+                <Link
+                  key={item.writing.id}
+                  href={`/post/${item.writing.slug}`}
+                  className="block p-4 border border-border/40 hover:border-border transition-colors bg-muted/5 space-y-2 hover:bg-muted/10"
+                >
+                  <h4 className="text-xs font-bold truncate text-foreground">{item.writing.title}</h4>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    by {item.author.displayName || item.author.username}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Comments Section */}
         <CommentsSection writingId={result.writing.id} />

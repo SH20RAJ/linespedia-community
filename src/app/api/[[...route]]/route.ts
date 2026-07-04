@@ -5,6 +5,7 @@ import { users, writings, reactions, bookmarks, comments, follows, notifications
 import { eq, and, desc, sql, inArray, lt, or } from "drizzle-orm";
 import { hexclaveServerApp } from "@/hexclave/server";
 import { z } from "zod";
+import { seedWritings as rawSeedWritings, quotes as rawQuotes, authors as rawAuthors } from "@/lib/seed-data";
 
 const app = new Hono().basePath("/api/v1");
 
@@ -789,52 +790,9 @@ app.post("/admin/seed", async (c) => {
       return c.json({ error: "Invalid passcode" }, 403);
     }
 
-    const seedWritings = [
-      { title: "Shall I Compare Thee to a Summer's Day? (Sonnet 18)", primaryEmotion: "love", language: "en", content: `<p>Shall I compare thee to a summer's day?<br>Thou art more lovely and more temperate:<br>Rough winds do shake the darling buds of May,<br>And summer's lease hath all too short a date.</p><p>But thy eternal summer shall not fade,<br>Nor lose possession of that fair thou ow'st;<br>Nor shall death brag thou wander'st in his shade,<br>When in eternal lines to time thou grow'st.</p>`, readingTime: 1, tags: ["#sonnet", "#shakespeare", "#love"] },
-      { title: "She Walks in Beauty", primaryEmotion: "love", language: "en", content: `<p>She walks in beauty, like the night<br>Of cloudless climes and starry skies;<br>And all that’s best of dark and bright<br>Meet in her aspect and her eyes.</p>`, readingTime: 1, tags: ["#love", "#byron", "#classic"] },
-      { title: "Annabel Lee", primaryEmotion: "love", language: "en", content: `<p>It was many and many a year ago,<br>In a kingdom by the sea,<br>That a maiden there lived whom you may know<br>By the name of Annabel Lee;<br>And this maiden she lived with no other thought<br>Than to love and be loved by me.</p>`, readingTime: 2, tags: ["#love", "#sad", "#poe"] },
-      { title: "Daffodils", primaryEmotion: "peace", language: "en", content: `<p>I wandered lonely as a cloud<br>That floats on high o'er vales and hills,<br>When all at once I saw a crowd,<br>A host, of golden daffodils;<br>Beside the lake, beneath the trees,<br>Fluttering and dancing in the breeze.</p>`, readingTime: 1, tags: ["#nature", "#peace", "#wordsworth"] },
-      { title: "Hope is the Thing with Feathers", primaryEmotion: "hope", language: "en", content: `<p>Hope is the thing with feathers<br>That perches in the soul,<br>And sings the tune without the words,<br>And never stops at all.</p>`, readingTime: 1, tags: ["#hope", "#soul", "#dickinson"] },
-      { title: "Success is Counted Sweetest", primaryEmotion: "motivation", language: "en", content: `<p>Success is counted sweetest<br>By those who ne'er succeed.<br>To comprehend a nectar<br>Requires sorest need.</p>`, readingTime: 1, tags: ["#success", "#motivation", "#dickinson"] },
-      { title: "The Raven", primaryEmotion: "sad", language: "en", content: `<p>Once upon a midnight dreary, while I pondered, weak and weary,<br>Over many a quaint and curious volume of forgotten lore—<br>While I nodded, nearly napping, suddenly there came a tapping,<br>As of some one gently rapping, rapping at my chamber door.</p>`, readingTime: 3, tags: ["#mystery", "#sad", "#poe"] },
-      { title: "Still I Rise", primaryEmotion: "motivation", language: "en", content: `<p>You may write me down in history<br>With your bitter, twisted lies,<br>You may trod me in the very dirt<br>But still, like dust, I'll rise.</p>`, readingTime: 2, tags: ["#motivation", "#strength", "#angelou"] },
-      { title: "Do Not Go Gentle Into That Good Night", primaryEmotion: "anger", language: "en", content: `<p>Do not go gentle into that good night,<br>Old age should burn and rave at close of day;<br>Rage, rage against the dying of the light.</p>`, readingTime: 1, tags: ["#rage", "#life", "#thomas"] },
-      { title: "If", primaryEmotion: "motivation", language: "en", content: `<p>If you can keep your head when all about you<br>Are losing theirs and blaming it on you,<br>If you can trust yourself when all men doubt you,<br>But make allowance for their doubting too;</p>`, readingTime: 2, tags: ["#motivation", "#life", "#kipling"] },
-      { title: "Bol Ke Lab Azaad Hain Tere", primaryEmotion: "motivation", language: "ur", content: `<p>Bol ki lab aazaad hain tere,<br>Bol zabāñ ab tak terī hai.<br>Terā sutvāñ jism hai terā,<br>Bol ki jaañ ab tak terī hai.</p>`, readingTime: 1, tags: ["#faiz", "#motivation", "#shayari"] },
-      { title: "Hum Dekhenge", primaryEmotion: "motivation", language: "ur", content: `<p>Hum dekhenge,<br>Lāzim hai ke hum bhī dekhenge.<br>Vo din ke jis kā vaada hai,<br>Jo lauh-e-azal pe likkhā hai.</p>`, readingTime: 2, tags: ["#faiz", "#protest", "#shayari"] },
-      { title: "Where the Mind is Without Fear", primaryEmotion: "motivation", language: "en", content: `<p>Where the mind is without fear and the head is held high;<br>Where knowledge is free;<br>Where the world has not been broken up into fragments<br>By narrow domestic walls;</p>`, readingTime: 1, tags: ["#freedom", "#tagore", "#motivation"] },
-      { title: "Where the Mind is Without Fear (Gitanjali)", primaryEmotion: "hope", language: "bn", content: `<p>Chitto jetha bhayshunyo, uchcho jetha shir,<br>Gnyan jetha mukto, jetha griher prachir<br>Apon prangontole dibashbhabori<br>Bosundhare rakhe nai khondo khudra kori.</p>`, readingTime: 1, tags: ["#tagore", "#freedom", "#bengali"] },
-      { title: "Bullah Ki Jaana Main Kaun", primaryEmotion: "peace", language: "pa", content: `<p>Na main momin vich maseetān, na main vich kufar diān reetān,<br>Na main pākān vich paleetān, na main moosa na faraun.<br>Bullah ki jaana main kaun!</p>`, readingTime: 1, tags: ["#bullehshah", "#sufi", "#punjabi"] },
-      { title: "Thirukkural - Chapter on Love", primaryEmotion: "love", language: "ta", content: `<p>அன்பிலார் எல்லாம் தமக்குரியர் அன்புடையார்<br>என்பும் உரியர் பிறர்க்கு.<br>Anbilaar ellaam thamakuriyar anbudaikaar enbum uriyar pirarkku.</p>`, readingTime: 1, tags: ["#thiruvalluvar", "#love", "#tamil"] },
-      { title: "Vemana Neethi Shatakam", primaryEmotion: "peace", language: "te", content: `<p>Alpa buddhi vaniki adhikara micchina<br>Doddavalanu jampi tolagajeyu<br>Cheppu thinna kukka cheruku తీపి యెరుగునా?<br>Viswadabhirama vinura vema.</p>`, readingTime: 1, tags: ["#vemana", "#wisdom", "#telugu"] },
-      { title: "Al-Atlal (The Ruins)", primaryEmotion: "sad", language: "ar", content: `<p>يا فؤادي لا تسل أين الهوى<br>كان صرحاً من خيالٍ فهوى<br>اسقني واشرب على أطلاله<br>واروِ عني طالما الدمع روى</p>`, readingTime: 1, tags: ["#poetry", "#arabic", "#love"] },
-      { title: "Wandrers Nachtlied (Wanderer's Nightsong)", primaryEmotion: "peace", language: "de", content: `<p>Über allen Gipfeln<br>Ist Ruh,<br>In allen Wipfeln<br>Spürest du<br>Kaum einen Hauch;<br>Die Vögelein schweigen im Walde.<br>Warte nur, balde<br>Ruhest du auch.</p>`, readingTime: 1, tags: ["#goethe", "#peace", "#german"] },
-    ];
-
-    const authors = ["Rumi", "Kabir", "Ghalib", "Wordsworth", "Tagore", "Emily Dickinson", "Robert Frost", "Shakespeare", "Neruda", "Baudelaire", "Bulleh Shah", "Thiruvalluvar", "Vemana", "Goethe"];
-    const quotes = [
-      { text: "What you seek is seeking you.", emotion: "hope", lang: "en", tags: ["#rumi", "#hope", "#spiritual"] },
-      { text: "Only from the heart can you touch the sky.", emotion: "love", lang: "en", tags: ["#rumi", "#love", "#heart"] },
-      { text: "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.", emotion: "peace", lang: "en", tags: ["#rumi", "#wisdom", "#peace"] },
-      { text: "Do not feel lonely, the entire universe is inside you.", emotion: "hope", lang: "en", tags: ["#rumi", "#hope", "#universe"] },
-      { text: "Bura jo dekhan main chala, bura na milya koy. Jo dil khoja aapna, mujhse bura na koy.", emotion: "peace", lang: "hi", tags: ["#kabir", "#peace", "#wisdom"] },
-      { text: "Lali mere lal ki, jit dekhoon tit lal. Lali dekhan main gayi, main bhi ho gayi lal.", emotion: "love", lang: "hi", tags: ["#kabir", "#love", "#devotion"] },
-      { text: "Dil-e-nadaan tujhe hua kya hai, aakhir is dard ki dava kya hai.", emotion: "sad", lang: "ur", tags: ["#ghalib", "#sad", "#love"] },
-      { text: "Ishq ne 'Ghalib' nikamma kar diya, varna hum bhi aadmi the kaam ke.", emotion: "nostalgia", lang: "ur", tags: ["#ghalib", "#nostalgia", "#love"] },
-      { text: "Clouds come floating into my life, no longer to usher storm but to add color.", emotion: "peace", lang: "en", tags: ["#tagore", "#peace", "#life"] },
-      { text: "If you shed tears when you miss the sun, you also miss the stars.", emotion: "hope", lang: "en", tags: ["#tagore", "#hope", "#stars"] },
-      { text: "The woods are lovely, dark and deep, but I have promises to keep.", emotion: "peace", lang: "en", tags: ["#frost", "#peace", "#woods"] },
-      { text: "Love all, trust a few, do wrong to none.", emotion: "peace", lang: "en", tags: ["#shakespeare", "#peace", "#wisdom"] },
-      { text: "Puedo escribir los versos más tristes esta noche. Escribir, por ejemplo: 'La noche está estrellada, y tiritan, azules, los astros, a lo lejos.'", emotion: "sad", lang: "es", tags: ["#neruda", "#sad", "#poetry"] },
-      { text: "Para mi corazón basta tu pecho, para tu libertad bastan mis alas.", emotion: "love", lang: "es", tags: ["#neruda", "#love", "#poetry"] },
-      { text: "Sois sage, ô ma Douleur, et tiens-toi plus tranquille. Tu réclamais le Soir; il descend; le voici.", emotion: "sad", lang: "fr", tags: ["#baudelaire", "#sad", "#poetry"] },
-      { text: "Amader choto nodi chole bake bake, boishakh mashe tar hatu jol thake.", emotion: "nostalgia", lang: "bn", tags: ["#tagore", "#nostalgia", "#bengali"] },
-      { text: "Tere ishq nachaya kar ke thaiya thaiya.", emotion: "love", lang: "pa", tags: ["#bullehshah", "#love", "#sufi"] },
-      { text: "Keraladheepom or Tamilzhagam, language connects the hearts.", emotion: "peace", lang: "ta", tags: ["#culture", "#peace"] },
-      { text: "Kavitha oothu, telugu bhasha theeyadhanam.", emotion: "hope", lang: "te", tags: ["#poetry", "#telugu"] },
-      { text: "Ana uhibbuka ya habibi.", emotion: "love", lang: "ar", tags: ["#love", "#arabic"] },
-      { text: "Mehr Licht! (More light!)", emotion: "hope", lang: "de", tags: ["#goethe", "#hope", "#wisdom"] }
-    ];
+    const seedWritings = [...rawSeedWritings];
+    const quotes = [...rawQuotes];
+    const authors = [...rawAuthors];
 
     // Seed 45 additional real distinct writings in different languages to exceed 50+ database writings
     for (let i = 0; i < 45; i++) {
