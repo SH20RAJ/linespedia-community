@@ -374,11 +374,19 @@ app.get("/comments", async (c) => {
   const writingId = c.req.query("writingId");
   if (!writingId) return c.json({ error: "writingId is required" }, 400);
 
+  const limit = parseInt(c.req.query("limit") || "10");
+  const offset = parseInt(c.req.query("offset") || "0");
+  const sortBy = c.req.query("sortBy") || "newest"; // newest, oldest, popular
+
+  // Find root comments (parentId is null)
+  const conditions = [eq(comments.writingId, writingId), sql`${comments.parentId} IS NULL`];
+
   const list = await db
     .select({
       comment: comments,
       user: users,
       rating: reviews.rating,
+      likesCount: sql<number>`(select count(*) from ${commentLikes} where ${commentLikes.commentId} = ${comments.id})`.mapWith(Number),
     })
     .from(comments)
     .innerJoin(users, eq(comments.userId, users.id))
@@ -389,8 +397,16 @@ app.get("/comments", async (c) => {
         eq(reviews.writingId, comments.writingId)
       )
     )
-    .where(eq(comments.writingId, writingId))
-    .orderBy(desc(comments.createdAt));
+    .where(and(...conditions))
+    .orderBy(
+      sortBy === "popular"
+        ? desc(sql`(select count(*) from ${commentLikes} where ${commentLikes.commentId} = ${comments.id})`)
+        : sortBy === "oldest"
+        ? sql`${comments.createdAt} ASC`
+        : desc(comments.createdAt)
+    )
+    .limit(limit)
+    .offset(offset);
 
   // Query comment likes
   const writingLikes = await db
@@ -413,32 +429,63 @@ app.get("/comments", async (c) => {
     likesByComment.set(l.commentId, arr);
   });
 
-  // Structure comment tree
-  const items = list.map((item) => {
+  const rootItems = list.map((item) => {
     const userIds = likesByComment.get(item.comment.id) || [];
     return {
       ...item.comment,
       user: item.user,
       rating: item.rating || null,
-      likesCount: userIds.length,
+      likesCount: item.likesCount,
       hasLiked: dbUser ? userIds.includes(dbUser.id) : false,
       replies: [] as any[],
     };
   });
 
-  const rootComments: any[] = [];
-  const map = new Map<string, any>();
+  const rootIds = rootItems.map(item => item.id);
+  let repliesMapped: any[] = [];
+  if (rootIds.length > 0) {
+    const repliesList = await db
+      .select({
+        comment: comments,
+        user: users,
+        rating: reviews.rating,
+        likesCount: sql<number>`(select count(*) from ${commentLikes} where ${commentLikes.commentId} = ${comments.id})`.mapWith(Number),
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .leftJoin(
+        reviews,
+        and(
+          eq(reviews.userId, comments.userId),
+          eq(reviews.writingId, comments.writingId)
+        )
+      )
+      .where(inArray(comments.parentId, rootIds))
+      .orderBy(desc(comments.createdAt));
 
-  items.forEach((item) => map.set(item.id, item));
-  items.forEach((item) => {
-    if (item.parentId && map.has(item.parentId)) {
-      map.get(item.parentId).replies.push(item);
-    } else {
-      rootComments.push(item);
+    repliesMapped = repliesList.map((item) => {
+      const userIds = likesByComment.get(item.comment.id) || [];
+      return {
+        ...item.comment,
+        user: item.user,
+        rating: item.rating || null,
+        likesCount: item.likesCount,
+        hasLiked: dbUser ? userIds.includes(dbUser.id) : false,
+        replies: [],
+      };
+    });
+  }
+
+  // Nest replies inside root comments
+  const map = new Map<string, any>();
+  rootItems.forEach((item) => map.set(item.id, item));
+  repliesMapped.forEach((reply) => {
+    if (reply.parentId && map.has(reply.parentId)) {
+      map.get(reply.parentId).replies.push(reply);
     }
   });
 
-  return c.json({ data: rootComments });
+  return c.json({ data: rootItems });
 });
 
 // Create comment
@@ -614,6 +661,47 @@ app.post("/writings/:id/bookmark", async (c) => {
 // ----------------------------------------------------
 // User Profile & Follows
 // ----------------------------------------------------
+
+// Get top users (by writing count, optional emotion filter)
+app.get("/users/top", async (c) => {
+  const emotion = c.req.query("emotion");
+  
+  const list = await db
+    .select({
+      id: writings.id,
+      userId: writings.userId,
+      primaryEmotion: writings.primaryEmotion,
+    })
+    .from(writings)
+    .where(eq(writings.isDraft, false));
+
+  const countMap = new Map<string, number>();
+  list.forEach((w) => {
+    if (emotion && w.primaryEmotion !== emotion) return;
+    countMap.set(w.userId, (countMap.get(w.userId) || 0) + 1);
+  });
+
+  const sortedUserIds = Array.from(countMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map((e) => e[0]);
+
+  if (sortedUserIds.length === 0) {
+    return c.json({ data: [] });
+  }
+
+  const topUsers = await db
+    .select()
+    .from(users)
+    .where(inArray(users.id, sortedUserIds));
+
+  const resultData = topUsers.map((u) => ({
+    user: u,
+    writingsCount: countMap.get(u.id) || 0,
+  })).sort((a, b) => b.writingsCount - a.writingsCount);
+
+  return c.json({ data: resultData });
+});
 
 // Get current logged-in user profile
 app.get("/users/me", async (c) => {
@@ -873,6 +961,19 @@ app.post("/admin/seed", async (c) => {
 // Reviews Endpoints
 app.get("/writings/:writingId/reviews", async (c) => {
   const writingId = c.req.param("writingId");
+  const limit = parseInt(c.req.query("limit") || "10");
+  const offset = parseInt(c.req.query("offset") || "0");
+  const sortBy = c.req.query("sortBy") || "newest"; // newest, oldest, highest_rating, lowest_rating
+
+  let orderByClause = desc(reviews.createdAt);
+  if (sortBy === "oldest") {
+    orderByClause = sql`${reviews.createdAt} ASC`;
+  } else if (sortBy === "highest_rating") {
+    orderByClause = desc(reviews.rating);
+  } else if (sortBy === "lowest_rating") {
+    orderByClause = sql`${reviews.rating} ASC`;
+  }
+
   const data = await db
     .select({
       id: reviews.id,
@@ -889,7 +990,9 @@ app.get("/writings/:writingId/reviews", async (c) => {
     .from(reviews)
     .innerJoin(users, eq(reviews.userId, users.id))
     .where(eq(reviews.writingId, writingId))
-    .orderBy(desc(reviews.createdAt));
+    .orderBy(orderByClause)
+    .limit(limit)
+    .offset(offset);
 
   const stats = await db
     .select({

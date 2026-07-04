@@ -11,6 +11,7 @@ import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
 import { ReviewsSection } from "@/components/feed/reviews";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -236,8 +237,19 @@ export default async function PostPage({ params }: PostPageProps) {
           initialUserReaction={null}
         />
 
-        {/* Reviews Section */}
-        <ReviewsSection writingId={result.writing.id} />
+        {/* Tabs for Comments and Reviews & Ratings */}
+        <Tabs defaultValue="comments" className="w-full pt-6 border-t border-border/20">
+          <TabsList className="grid w-full grid-cols-2 bg-muted/20 font-mono">
+            <TabsTrigger value="comments" className="text-xs cursor-pointer">Comments</TabsTrigger>
+            <TabsTrigger value="reviews" className="text-xs cursor-pointer">Reviews & Ratings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="comments" className="mt-4 focus-visible:outline-none">
+            <CommentsSection writingId={result.writing.id} />
+          </TabsContent>
+          <TabsContent value="reviews" className="mt-4 focus-visible:outline-none">
+            <ReviewsSection writingId={result.writing.id} />
+          </TabsContent>
+        </Tabs>
 
         {/* Related Writings Section */}
         {related.length > 0 && (
@@ -259,9 +271,6 @@ export default async function PostPage({ params }: PostPageProps) {
             </div>
           </div>
         )}
-
-        {/* Comments Section */}
-        <CommentsSection writingId={result.writing.id} />
       </article>
     </div>
   );

@@ -20,11 +20,13 @@ export function ReviewsSection({ writingId }: ReviewsSectionProps) {
   const [rating, setRating] = React.useState(5);
   const [content, setContent] = React.useState("");
   const [hoverRating, setHoverRating] = React.useState<number | null>(null);
+  const [sortBy, setSortBy] = React.useState("newest"); // newest, oldest, highest_rating, lowest_rating
+  const [limit, setLimit] = React.useState(10);
 
   const { data: reviewsData, isLoading } = useQuery({
-    queryKey: ["reviews", writingId],
+    queryKey: ["reviews", writingId, sortBy, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/writings/${writingId}/reviews`);
+      const res = await fetch(`/api/v1/writings/${writingId}/reviews?sortBy=${sortBy}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to load reviews");
       return (await res.json()) as any;
     },
@@ -132,52 +134,98 @@ export function ReviewsSection({ writingId }: ReviewsSectionProps) {
         </div>
       )}
 
+      {/* Sorting buttons */}
+      {!isLoading && reviewsList.length > 0 && (
+        <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/10 pt-4">
+          <span>SORT BY</span>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setSortBy("newest")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "newest" ? "font-bold text-foreground underline" : ""}`}
+            >
+              NEWEST
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy("highest_rating")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "highest_rating" ? "font-bold text-foreground underline" : ""}`}
+            >
+              HIGHEST
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy("lowest_rating")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "lowest_rating" ? "font-bold text-foreground underline" : ""}`}
+            >
+              LOWEST
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews List */}
       {isLoading ? (
-        <div className="text-center py-4 text-xs text-muted-foreground">Loading reviews...</div>
+        <div className="text-center py-4 text-xs text-muted-foreground animate-pulse">Loading reviews...</div>
       ) : reviewsList.length === 0 ? (
         <div className="text-center py-6 text-xs text-muted-foreground/60">
           No reviews yet. Be the first to share your rating!
         </div>
       ) : (
         <div className="space-y-4">
-          {reviewsList.map((review: any) => (
-            <div key={review.id} className="border-b border-border/20 pb-4 last:border-b-0 last:pb-0 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={review.user.avatar || ""} />
-                    <AvatarFallback className="text-[8px]">
-                      {review.user.username.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-[10px]">
-                    <span className="font-bold text-foreground">
-                      {review.user.displayName || review.user.username}
-                    </span>
-                    <span className="text-muted-foreground/60">@{review.user.username}</span>
+          <div className="space-y-4">
+            {reviewsList.map((review: any) => (
+              <div key={review.id} className="border-b border-border/20 pb-4 last:border-b-0 last:pb-0 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={review.user.avatar || ""} />
+                      <AvatarFallback className="text-[8px]">
+                        {review.user.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col text-[10px]">
+                      <span className="font-bold text-foreground">
+                        {review.user.displayName || review.user.username}
+                      </span>
+                      <span className="text-muted-foreground/60">@{review.user.username}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 font-mono text-[9px] text-muted-foreground">
+                    <div className="flex gap-0.5">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-3 w-3 ${
+                            star <= review.rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground/20"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                    <span>{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</span>
                   </div>
                 </div>
-                <div className="flex flex-col items-end gap-1 font-mono text-[9px] text-muted-foreground">
-                  <div className="flex gap-0.5">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        className={`h-3 w-3 ${
-                          star <= review.rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground/20"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <span>{formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}</span>
-                </div>
+                {review.content && (
+                  <p className="text-xs text-muted-foreground leading-relaxed pl-8 font-mono">
+                    {review.content}
+                  </p>
+                )}
               </div>
-              {review.content && (
-                <p className="text-xs text-muted-foreground leading-relaxed pl-8 font-mono">
-                  {review.content}
-                </p>
-              )}
+            ))}
+          </div>
+
+          {reviewsList.length >= limit && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLimit((prev) => prev + 10)}
+                className="text-[10px] h-7 px-3 font-mono cursor-pointer"
+              >
+                LOAD MORE REVIEWS
+              </Button>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

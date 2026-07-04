@@ -21,11 +21,13 @@ export function CommentsSection({ writingId }: CommentsProps) {
   const [commentText, setCommentText] = React.useState("");
   const [replyText, setReplyText] = React.useState("");
   const [replyToId, setReplyToId] = React.useState<string | null>(null);
+  const [sortBy, setSortBy] = React.useState("newest"); // newest, oldest, popular
+  const [limit, setLimit] = React.useState(10);
 
   const { data: commentsData, isLoading } = useQuery({
-    queryKey: ["comments", writingId],
+    queryKey: ["comments", writingId, sortBy, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/comments?writingId=${writingId}`);
+      const res = await fetch(`/api/v1/comments?writingId=${writingId}&sortBy=${sortBy}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to load comments");
       return (await res.json()) as any;
     },
@@ -207,6 +209,36 @@ export function CommentsSection({ writingId }: CommentsProps) {
         </div>
       </form>
 
+      {/* Sorting buttons */}
+      {!isLoading && comments.length > 0 && (
+        <div className="flex justify-between items-center text-[10px] text-muted-foreground border-t border-border/10 pt-4">
+          <span>SORT BY</span>
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setSortBy("newest")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "newest" ? "font-bold text-foreground underline" : ""}`}
+            >
+              NEWEST
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy("popular")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "popular" ? "font-bold text-foreground underline" : ""}`}
+            >
+              POPULAR
+            </button>
+            <button
+              type="button"
+              onClick={() => setSortBy("oldest")}
+              className={`hover:text-foreground cursor-pointer ${sortBy === "oldest" ? "font-bold text-foreground underline" : ""}`}
+            >
+              OLDEST
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Comment List */}
       {isLoading ? (
         <div className="space-y-4">
@@ -216,10 +248,25 @@ export function CommentsSection({ writingId }: CommentsProps) {
       ) : comments.length === 0 ? (
         <p className="text-center py-6 text-[11px] text-muted-foreground font-mono">No comments yet. Write one above!</p>
       ) : (
-        <div className="divide-y divide-border/10">
-          {comments.map((comment: any) => (
-            <CommentItem key={comment.id} comment={comment} />
-          ))}
+        <div className="space-y-4">
+          <div className="divide-y divide-border/10">
+            {comments.map((comment: any) => (
+              <CommentItem key={comment.id} comment={comment} />
+            ))}
+          </div>
+          
+          {comments.length >= limit && (
+            <div className="flex justify-center pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLimit((prev) => prev + 10)}
+                className="text-[10px] h-7 px-3 font-mono cursor-pointer"
+              >
+                LOAD MORE COMMENTS
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
