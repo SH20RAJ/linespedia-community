@@ -14,6 +14,7 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.6.0",
+		"@hexclave/next": "^1.0.45",
 		"@opennextjs/cloudflare": "^1.19.9",
 		"@phosphor-icons/react": "^2.1.10",
 		"@shadcn/react": "^0.2.0",
