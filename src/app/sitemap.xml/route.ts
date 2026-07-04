@@ -2,8 +2,6 @@ import { db } from "@/db";
 import { writings } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
-export const runtime = "edge";
-
 export async function GET() {
   let list: any[] = [];
   try {
