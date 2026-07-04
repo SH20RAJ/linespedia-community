@@ -6,7 +6,7 @@ import { PostCard } from "@/components/feed/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Activity, PlusCircle } from "lucide-react";
+import { Activity, PlusCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface HomeFeedProps {
@@ -16,6 +16,7 @@ interface HomeFeedProps {
 export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
   const [feedType, setFeedType] = React.useState(initialFeedType);
   const [limit, setLimit] = React.useState(10);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
 
   const { data: writingsResult, isLoading, error } = useQuery({
     queryKey: ["writings", feedType, limit],
@@ -28,6 +29,23 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
   });
 
   const posts = writingsResult || [];
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && posts.length >= limit && !isLoading) {
+          setLimit((prev) => prev + 10);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [posts.length, limit, isLoading]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -92,18 +110,17 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
               {posts.map((post: any) => (
                 <PostCard key={post.id} post={post} />
               ))}
-              {posts.length >= limit && (
-                <div className="flex justify-center pt-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setLimit((prev) => prev + 10)}
-                    className="text-xs font-mono"
-                  >
-                    Load More
-                  </Button>
-                </div>
-              )}
+              <div ref={observerTarget} className="flex justify-center py-6">
+                {posts.length >= limit ? (
+                  <span className="text-[10px] font-mono text-muted-foreground animate-pulse uppercase tracking-widest">
+                    Loading more lines...
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest">
+                    End of feed
+                  </span>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -136,6 +153,9 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
             </Link>
           </div>
 
+          {/* Random Lines Widget */}
+          <RandomLinesWidget />
+
           {/* Guidelines */}
           <div className="border border-border/40 p-4 text-xs space-y-2.5 font-mono text-muted-foreground">
             <h3 className="font-bold text-foreground">Writing Guidelines</h3>
@@ -145,6 +165,62 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function RandomLinesWidget() {
+  const [randomPosts, setRandomPosts] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  const fetchRandom = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch("/api/v1/writings/random");
+      if (!res.ok) throw new Error();
+      const json = await res.json() as any;
+      setRandomPosts(json.data || []);
+    } catch {
+      // Ignore
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchRandom();
+  }, []);
+
+  return (
+    <div className="border border-border/40 p-4 bg-muted/5 font-mono">
+      <div className="flex items-center justify-between mb-3 border-b border-border/10 pb-2">
+        <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+          <Sparkles className="h-3.5 w-3.5" />
+          Random Lines
+        </h2>
+        <button onClick={fetchRandom} className="text-[10px] text-muted-foreground hover:text-foreground underline cursor-pointer">
+          Refresh
+        </button>
+      </div>
+
+      {isLoading ? (
+        <p className="text-[10px] text-muted-foreground animate-pulse">Shuffling lines...</p>
+      ) : randomPosts.length === 0 ? (
+        <p className="text-[10px] text-muted-foreground">No random lines found.</p>
+      ) : (
+        <div className="space-y-3">
+          {randomPosts.map((post) => (
+            <Link
+              key={post.id}
+              href={`/post/${post.slug}`}
+              className="block hover:underline"
+            >
+              <h4 className="text-xs font-bold truncate">{post.title}</h4>
+              <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{post.primaryEmotion}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

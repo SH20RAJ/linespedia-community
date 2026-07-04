@@ -78,6 +78,23 @@ async function generateUniqueSlug(title: string): Promise<string> {
 // Writings Routes
 // ----------------------------------------------------
 
+// Random writings
+app.get("/writings/random", async (c) => {
+  const list = await db
+    .select({
+      id: writings.id,
+      title: writings.title,
+      slug: writings.slug,
+      primaryEmotion: writings.primaryEmotion,
+    })
+    .from(writings)
+    .where(eq(writings.isDraft, false))
+    .limit(100);
+
+  const shuffled = list.sort(() => 0.5 - Math.random()).slice(0, 3);
+  return c.json({ data: shuffled });
+});
+
 // List writings (Feed)
 app.get("/writings", async (c) => {
   const emotion = c.req.query("emotion");

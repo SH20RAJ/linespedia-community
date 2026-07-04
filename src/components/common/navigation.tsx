@@ -189,19 +189,91 @@ export function Navigation() {
                 <Menu className="h-5 w-5" />
               </Button>
             } />
-            <SheetContent side="right" className="w-[240px] sm:w-[300px]">
-              <nav className="flex flex-col gap-4 mt-6">
-                <Link href="/" className="font-semibold mb-2">Home</Link>
-                {navigationItems.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="text-muted-foreground hover:text-foreground text-sm py-1.5"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
+            <SheetContent side="right" className="w-[240px] sm:w-[280px] p-0 border-l border-border/45 bg-background font-mono">
+              <div className="flex flex-col h-full justify-between p-6">
+                <div className="space-y-6">
+                  {/* Brand header */}
+                  <div className="border-b border-border/20 pb-4">
+                    <span className="font-mono text-base font-bold tracking-tight text-foreground">
+                      linespedia
+                    </span>
+                  </div>
+
+                  {/* Profile block */}
+                  {dbUser && (
+                    <div className="flex items-center gap-3 border-b border-border/10 pb-4">
+                      <Avatar className="h-9 w-9">
+                        <AvatarImage src={dbUser.avatar || ""} />
+                        <AvatarFallback className="text-xs">
+                          {dbUser.username?.slice(0, 2).toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold truncate">{dbUser.displayName || dbUser.username}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">@{dbUser.username}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Nav Links */}
+                  <nav className="flex flex-col gap-3.5 text-[10px] font-bold uppercase tracking-wider">
+                    <Link href="/" className="hover:text-primary transition-colors py-1 text-foreground">Home</Link>
+                    {navigationItems.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className="text-muted-foreground hover:text-foreground transition-colors py-1"
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                    {dbUser && (
+                      <>
+                        <div className="border-t border-border/10 my-2" />
+                        <Link href={`/profile/${dbUser.username}`} className="text-muted-foreground hover:text-foreground transition-colors py-1">Profile</Link>
+                        <Link href="/notifications" className="text-muted-foreground hover:text-foreground transition-colors py-1">Notifications</Link>
+                        <Link href="/saved" className="text-muted-foreground hover:text-foreground transition-colors py-1">Saved</Link>
+                        <Link href="/drafts" className="text-muted-foreground hover:text-foreground transition-colors py-1">Drafts</Link>
+                        <Link href="/settings" className="text-muted-foreground hover:text-foreground transition-colors py-1">Settings</Link>
+                      </>
+                    )}
+                  </nav>
+                </div>
+
+                {/* Footer buttons */}
+                {dbUser ? (
+                  <div className="border-t border-border/20 pt-4">
+                    <button
+                      onClick={async () => {
+                        await hexclaveApp.redirectToSignOut();
+                      }}
+                      className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 text-[10px] font-bold text-center transition-colors uppercase tracking-wider border border-red-500/35 cursor-pointer"
+                    >
+                      Log Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="border-t border-border/20 pt-4 flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 text-[10px] font-mono h-8 cursor-pointer"
+                      onClick={async () => {
+                        await hexclaveApp.redirectToSignIn();
+                      }}
+                    >
+                      Sign In
+                    </Button>
+                    <Button
+                      className="flex-1 text-[10px] font-mono h-8 cursor-pointer"
+                      onClick={async () => {
+                        await hexclaveApp.redirectToSignUp();
+                      }}
+                    >
+                      Sign Up
+                    </Button>
+                  </div>
+                )}
+              </div>
             </SheetContent>
           </Sheet>
         </div>
