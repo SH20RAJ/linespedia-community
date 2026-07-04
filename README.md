@@ -1,4 +1,4 @@
-# Linespedia Community MVP
+# Linespedia Community
 
 Linespedia is a writing-first, typography-focused social community platform where users publish and read poems, stories, shayari, quotes, lyrics, and thoughts categorized and driven by core emotions.
 
