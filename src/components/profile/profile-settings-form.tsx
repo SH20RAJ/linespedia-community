@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-export function SettingsContainer() {
+export function ProfileSettingsForm() {
   const hexclaveUser = useUser({ or: "redirect" });
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -18,9 +18,6 @@ export function SettingsContainer() {
   const [displayName, setDisplayName] = React.useState("");
   const [username, setUsername] = React.useState("");
   const [bio, setBio] = React.useState("");
-  const [website, setWebsite] = React.useState("");
-  const [twitter, setTwitter] = React.useState("");
-  const [github, setGithub] = React.useState("");
   const [isSaving, setIsSaving] = React.useState(false);
 
   // Fetch db user profile info
@@ -40,9 +37,6 @@ export function SettingsContainer() {
       setDisplayName(meResult.displayName || "");
       setUsername(meResult.username || "");
       setBio(meResult.bio || "");
-      setWebsite(meResult.website || "");
-      setTwitter(meResult.twitter || "");
-      setGithub(meResult.github || "");
     }
   }, [meResult]);
 
@@ -54,7 +48,6 @@ export function SettingsContainer() {
     }
 
     setIsSaving(true);
-
     try {
       const res = await fetch("/api/v1/users/profile", {
         method: "PUT",
@@ -63,9 +56,10 @@ export function SettingsContainer() {
           displayName,
           username,
           bio,
-          website,
-          twitter,
-          github,
+          // Keep current socials intact during profile save
+          website: meResult?.website || "",
+          twitter: meResult?.twitter || "",
+          github: meResult?.github || "",
         }),
       });
 
@@ -77,7 +71,6 @@ export function SettingsContainer() {
       toast.success("Profile updated successfully!");
       queryClient.invalidateQueries({ queryKey: ["me"] });
       queryClient.invalidateQueries({ queryKey: ["profile", username] });
-      router.push(`/profile/${username}`);
     } catch (e: any) {
       toast.error(e.message || "Error updating profile");
     } finally {
@@ -87,14 +80,14 @@ export function SettingsContainer() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-xl px-4 py-16 text-center font-mono">
+      <div className="text-center font-mono py-8">
         <p className="text-xs text-muted-foreground animate-pulse">Loading profile settings...</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-6 space-y-6">
+    <div className="space-y-6">
       <div className="border-b border-border/20 pb-4">
         <h1 className="text-xl font-bold tracking-tight">Account Settings</h1>
         <p className="text-xs text-muted-foreground mt-1 font-mono">
@@ -136,43 +129,8 @@ export function SettingsContainer() {
           />
         </div>
 
-        <div className="space-y-1">
-          <Label htmlFor="website" className="text-xs font-bold uppercase tracking-wider">Website URL</Label>
-          <Input
-            id="website"
-            value={website}
-            onChange={(e) => setWebsite(e.target.value)}
-            placeholder="https://example.com"
-            className="text-xs"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <Label htmlFor="twitter" className="text-xs font-bold uppercase tracking-wider">Twitter</Label>
-            <Input
-              id="twitter"
-              value={twitter}
-              onChange={(e) => setTwitter(e.target.value)}
-              placeholder="Twitter handle"
-              className="text-xs"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="github" className="text-xs font-bold uppercase tracking-wider">GitHub</Label>
-            <Input
-              id="github"
-              value={github}
-              onChange={(e) => setGithub(e.target.value)}
-              placeholder="GitHub username"
-              className="text-xs"
-            />
-          </div>
-        </div>
-
         <div className="flex justify-end pt-4">
-          <Button type="submit" disabled={isSaving} className="text-xs">
+          <Button type="submit" disabled={isSaving} className="text-xs hover:scale-[1.02] active:scale-[0.98] transition-transform">
             {isSaving ? "Saving..." : "Save Profile"}
           </Button>
         </div>
