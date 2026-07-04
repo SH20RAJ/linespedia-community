@@ -24,6 +24,13 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   if (!result) return { title: "Writing Not Found" };
 
   const plainText = result.content.replace(/<[^>]*>/g, "").slice(0, 160);
+  const emotionOgImages: Record<string, string> = {
+    love: "https://linespedia.com/og-love.png",
+    sad: "https://linespedia.com/og-sad.png",
+    hope: "https://linespedia.com/og-hope.png",
+    peace: "https://linespedia.com/og-peace.png",
+  };
+  const ogImageUrl = emotionOgImages[result.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
 
   return {
     title: `${result.title} | Linespedia`,
@@ -32,11 +39,13 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
       title: result.title,
       description: plainText,
       type: "article",
+      images: [{ url: ogImageUrl, width: 1200, height: 1200, alt: `${result.title} on Linespedia` }],
     },
     twitter: {
       card: "summary_large_image",
       title: result.title,
       description: plainText,
+      images: [ogImageUrl],
     },
   };
 }

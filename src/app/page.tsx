@@ -7,13 +7,15 @@ export const metadata: Metadata = {
   description: "The cleanest writing-first social platform organized by emotions. Read, write, and feel poems, stories, and shayari.",
   openGraph: {
     title: "Linespedia Community",
-    description: "The cleanest writing-first social platform organized by emotions.",
+    description: "The cleanest writing-first social platform organized by emotions. Read, write, and feel poems, stories, and shayari.",
     type: "website",
+    images: [{ url: "https://linespedia.com/og-main.png", width: 1200, height: 1200, alt: "Linespedia Community" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "Linespedia Community",
-    description: "The cleanest writing-first social platform organized by emotions.",
+    description: "The cleanest writing-first social platform organized by emotions. Read, write, and feel poems, stories, and shayari.",
+    images: ["https://linespedia.com/og-main.png"],
   },
 };
 
