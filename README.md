@@ -1,47 +1,82 @@
-# OpenNext Starter
+# Linespedia Community MVP
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Linespedia is a writing-first, typography-focused social community platform where users publish and read poems, stories, shayari, quotes, lyrics, and thoughts categorized and driven by core emotions.
 
-## Getting Started
+---
 
-Read the documentation at https://opennext.js.org/cloudflare.
+## 🚀 Key Features
 
-## Develop
+- **Emotion-Driven Cataloging**: Explore and publish writings categorized by emotions: *Love, Sad, Hope, Peace, Motivation, Anger, Fear, Humor, Nostalgia, Dream, Gratitude, and Mystery*.
+- **Hexclave Authentication**: Seamless authentication using Stack Auth (Hexclave) Cloud Identity Provider.
+- **TipTap Canvas Editor**: A distraction-free typography rich editor with local auto-saving draft recovery.
+- **Interactive Disccussion Threads**: Nested comments and structured reaction systems (Love, Sad, Hope, Peace, etc.).
+- **Search Palette**: Command-K search overlay for exploring writings, tags, and users instantly.
+- **Premium UX Design**: Custom, clean typographic styling utilizing pure shadcn UI components.
+- **High-fidelity SEO & JSON-LD**: Pure Server Component routing (`page.tsx`) with dynamic SEO tags, dynamic RSS feeds (`/feed.xml`), sitemaps, and rich metadata schemas.
 
-Run the Next.js development server:
+---
 
-```bash
-npm run dev
-# or similar package manager command
+## 🛠️ Technology Stack
+
+- **Framework**: Next.js (App Router, Server Components)
+- **API Routing**: Hono.js catch-all API handler
+- **Database**: Neon DB (PostgreSQL) Serverless
+- **ORM**: Drizzle ORM
+- **Authentication**: `@hexclave/next`
+- **UI Components**: Shadcn UI & Base UI
+- **Rich Text Editor**: TipTap Editor
+- **Global State**: Zustand
+
+---
+
+## 📂 Project Architecture
+
+```
+├── src
+│   ├── app                 # Next.js App Router (Pure Server Components)
+│   │   ├── api             # Hono catch-all endpoints
+│   │   ├── explore         # Emotion categories browsing
+│   │   ├── post            # Dynamic single reading pages
+│   │   └── profile         # User bio & statistic tabs
+│   ├── components          # Reusable UI & Client Containers
+│   │   ├── common          # Navigation header, providers, search palette
+│   │   ├── editor          # TipTap editor & drafts listing
+│   │   ├── feed            # Post cards, comments, bookmarking, reactions
+│   │   └── ui              # Primitive styled shadcn components
+│   ├── db                  # Database configuration & schema declarations
+│   └── hexclave            # Authentication clients (Client/Server)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## ⚙️ Setup and Installation
 
-## Preview
+### 1. Environment Variables
+Create a `.env.local` file at the root:
 
-Preview the application locally on the Cloudflare runtime:
-
-```bash
-npm run preview
-# or similar package manager command
+```env
+DATABASE_URL=postgresql://user:pass@host/db?sslmode=require
+NEXT_PUBLIC_HEXCLAVE_API_URL=https://api.stack-auth.com
+NEXT_PUBLIC_HEXCLAVE_PROJECT_ID=8db5d0ee-b051-46b4-94db-494f90dd5927
 ```
 
-## Deploy
-
-Deploy the application to Cloudflare:
-
+### 2. Install Dependencies
 ```bash
-npm run deploy
-# or similar package manager command
+bun install
 ```
 
-## Learn More
+### 3. Database Migrations
+Deploy schema:
+```bash
+bunx drizzle-kit push
+```
 
-To learn more about Next.js, take a look at the following resources:
+### 4. Running Locally
+```bash
+bun run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📄 License
+This project is open source and available under the MIT License.
