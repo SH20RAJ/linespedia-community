@@ -1212,6 +1212,73 @@ app.delete("/admin/users/:id", async (c) => {
   return c.json({ success: true });
 });
 
+app.get("/admin/comments", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const list = await db
+    .select({
+      id: comments.id,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      user: {
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+      },
+      writingTitle: writings.title,
+    })
+    .from(comments)
+    .innerJoin(users, eq(comments.userId, users.id))
+    .innerJoin(writings, eq(comments.writingId, writings.id))
+    .orderBy(desc(comments.createdAt));
+
+  return c.json({ data: list });
+});
+
+app.delete("/admin/comments/:id", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const id = c.req.param("id");
+  await db.delete(comments).where(eq(comments.id, id));
+  return c.json({ success: true });
+});
+
+app.get("/admin/reviews", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const list = await db
+    .select({
+      id: reviews.id,
+      content: reviews.content,
+      rating: reviews.rating,
+      createdAt: reviews.createdAt,
+      user: {
+        id: users.id,
+        username: users.username,
+        displayName: users.displayName,
+      },
+      writingTitle: writings.title,
+    })
+    .from(reviews)
+    .innerJoin(users, eq(reviews.userId, users.id))
+    .innerJoin(writings, eq(reviews.writingId, writings.id))
+    .orderBy(desc(reviews.createdAt));
+
+  return c.json({ data: list });
+});
+
+app.delete("/admin/reviews/:id", async (c) => {
+  const passcode = c.req.header("X-Admin-Passcode");
+  if (passcode !== "17092006") return c.json({ error: "Unauthorized" }, 401);
+
+  const id = c.req.param("id");
+  await db.delete(reviews).where(eq(reviews.id, id));
+  return c.json({ success: true });
+});
+
 export const GET = handle(app);
 export const POST = handle(app);
 export const PUT = handle(app);
