@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useUser, useHexclaveApp } from "@hexclave/next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { MessageSquare, CornerDownRight, Trash2 } from "lucide-react";
+import { MessageSquare, CornerDownRight, Trash2, Heart, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface CommentsProps {
@@ -18,22 +18,33 @@ export function CommentsSection({ writingId }: CommentsProps) {
   const queryClient = useQueryClient();
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
-
   const [commentText, setCommentText] = React.useState("");
-  const [replyToId, setReplyToId] = React.useState<string | null>(null);
   const [replyText, setReplyText] = React.useState("");
+  const [replyToId, setReplyToId] = React.useState<string | null>(null);
 
-  const { data: commentsResult, isLoading } = useQuery({
+  const { data: commentsData, isLoading } = useQuery({
     queryKey: ["comments", writingId],
     queryFn: async () => {
       const res = await fetch(`/api/v1/comments?writingId=${writingId}`);
-      if (!res.ok) throw new Error("Failed to fetch comments");
-      const json = await res.json() as any;
-      return json.data;
+      if (!res.ok) throw new Error("Failed to load comments");
+      return (await res.json()) as any;
     },
   });
 
-  const comments = commentsResult || [];
+  const likeMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const res = await fetch(`/api/v1/comments/${commentId}/like`, {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to like comment");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments", writingId] });
+    },
+  });
+
+  const comments = commentsData?.data || [];
 
   const postMutation = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string | null }) => {
@@ -95,6 +106,12 @@ export function CommentsSection({ writingId }: CommentsProps) {
               <AvatarFallback className="text-[9px]">{comment.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <span className="text-xs font-bold font-mono">{comment.user.displayName || comment.user.username}</span>
+            {comment.rating && (
+              <span className="flex items-center gap-0.5 text-amber-500 text-[10px] ml-1 bg-amber-500/10 px-1 py-0.2">
+                <Star className="h-2.5 w-2.5 fill-current" />
+                <span className="font-bold">{comment.rating}</span>
+              </span>
+            )}
             <span className="text-[10px] text-muted-foreground font-mono">
               {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
             </span>
@@ -114,7 +131,23 @@ export function CommentsSection({ writingId }: CommentsProps) {
 
         <p className="text-xs text-foreground font-mono leading-relaxed pl-8">{comment.content}</p>
 
-        <div className="pl-8 flex gap-2">
+        <div className="pl-8 flex items-center gap-4">
+          <button
+            onClick={() => {
+              if (!hexclaveUser) {
+                toast.error("Please sign in to like comments");
+                return;
+              }
+              likeMutation.mutate(comment.id);
+            }}
+            className={`flex items-center gap-1.5 text-[10px] font-mono transition-colors ${
+              comment.hasLiked ? "text-rose-500 font-bold" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Heart className={`h-3 w-3 ${comment.hasLiked ? "fill-rose-500 stroke-rose-500" : ""}`} />
+            <span>{comment.likesCount || 0}</span>
+          </button>
+
           {hexclaveUser && !isReply && (
             <Button
               variant="link"

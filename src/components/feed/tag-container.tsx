@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/feed/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Hash } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface TagContainerProps {
   tag: string;
@@ -13,10 +14,12 @@ interface TagContainerProps {
 export function TagContainer({ tag }: TagContainerProps) {
   const decodedTag = decodeURIComponent(tag);
 
+  const [limit, setLimit] = React.useState(10);
+
   const { data: writingsResult, isLoading } = useQuery({
-    queryKey: ["writings-tag", decodedTag],
+    queryKey: ["writings-tag", decodedTag, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?tag=${encodeURIComponent(decodedTag.startsWith("#") ? decodedTag : `#${decodedTag}`)}&limit=30`);
+      const res = await fetch(`/api/v1/writings?tag=${encodeURIComponent(decodedTag.startsWith("#") ? decodedTag : `#${decodedTag}`)}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to load tag writings");
       const json = (await res.json()) as any;
       return json.data;
@@ -48,7 +51,21 @@ export function TagContainer({ tag }: TagContainerProps) {
             <p className="text-xs text-muted-foreground">No writings found with this tag.</p>
           </div>
         ) : (
-          posts.map((post: any) => <PostCard key={post.id} post={post} />)
+          <div className="space-y-4">
+            {posts.map((post: any) => <PostCard key={post.id} post={post} />)}
+            {posts.length >= limit && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLimit((prev) => prev + 10)}
+                  className="text-xs font-mono"
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

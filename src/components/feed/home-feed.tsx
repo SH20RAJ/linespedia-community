@@ -11,11 +11,12 @@ import Link from "next/link";
 
 export function HomeFeed() {
   const [feedType, setFeedType] = React.useState("latest");
+  const [limit, setLimit] = React.useState(10);
 
   const { data: writingsResult, isLoading, error } = useQuery({
-    queryKey: ["writings", feedType],
+    queryKey: ["writings", feedType, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?feedType=${feedType}&limit=20`);
+      const res = await fetch(`/api/v1/writings?feedType=${feedType}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to fetch writings");
       const json = (await res.json()) as any;
       return json.data;
@@ -46,10 +47,10 @@ export function HomeFeed() {
           {/* Feed Tabs */}
           <Tabs value={feedType} onValueChange={setFeedType} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted/20">
-              <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
-              <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
-              <TabsTrigger value="following" className="text-xs">Following</TabsTrigger>
-              <TabsTrigger value="for-you" className="text-xs">For You</TabsTrigger>
+              <TabsTrigger value="latest" onClick={() => { setFeedType("latest"); setLimit(10); }} className="text-xs">Latest</TabsTrigger>
+              <TabsTrigger value="trending" onClick={() => { setFeedType("trending"); setLimit(10); }} className="text-xs">Trending</TabsTrigger>
+              <TabsTrigger value="following" onClick={() => { setFeedType("following"); setLimit(10); }} className="text-xs">Following</TabsTrigger>
+              <TabsTrigger value="for-you" onClick={() => { setFeedType("for-you"); setLimit(10); }} className="text-xs">For You</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -87,6 +88,18 @@ export function HomeFeed() {
               {posts.map((post: any) => (
                 <PostCard key={post.id} post={post} />
               ))}
+              {posts.length >= limit && (
+                <div className="flex justify-center pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setLimit((prev) => prev + 10)}
+                    className="text-xs font-mono"
+                  >
+                    Load More
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

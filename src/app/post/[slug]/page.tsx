@@ -1,8 +1,8 @@
 import { db } from "@/db";
-import { writings, users, reactions, bookmarks } from "@/db/schema";
+import { writings, users, reactions, bookmarks, reviews } from "@/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { notFound } from "next/navigation";
-import { getEmotionBadgeStyles } from "@/components/feed/post-card";
+import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Clock, Eye } from "lucide-react";
@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
+import { ReviewsSection } from "@/components/feed/reviews";
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -78,7 +79,25 @@ export default async function PostPage({ params }: PostPageProps) {
     return acc;
   }, {} as Record<string, number>);
 
-  const jsonLd = {
+  // Query reviews
+  const dbReviews = await db
+    .select({
+      id: reviews.id,
+      rating: reviews.rating,
+      content: reviews.content,
+      createdAt: reviews.createdAt,
+      user: users,
+    })
+    .from(reviews)
+    .innerJoin(users, eq(reviews.userId, users.id))
+    .where(eq(reviews.writingId, result.writing.id));
+
+  const totalReviews = dbReviews.length;
+  const avgRating = totalReviews > 0
+    ? dbReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
+    : 5.0;
+
+  const jsonLd: any = {
     "@context": "https://schema.org",
     "@type": "Article",
     "headline": result.writing.title,
@@ -91,6 +110,31 @@ export default async function PostPage({ params }: PostPageProps) {
       "url": `https://linespedia.com/profile/${result.author.username}`,
     },
   };
+
+  if (totalReviews > 0) {
+    jsonLd.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": avgRating.toFixed(1),
+      "reviewCount": totalReviews,
+      "bestRating": "5",
+      "worstRating": "1",
+    };
+    jsonLd.review = dbReviews.map((r) => ({
+      "@type": "Review",
+      "author": {
+        "@type": "Person",
+        "name": r.user.displayName || r.user.username,
+      },
+      "datePublished": r.createdAt.toISOString(),
+      "reviewBody": r.content || "",
+      "reviewRating": {
+        "@type": "Rating",
+        "ratingValue": r.rating,
+        "bestRating": "5",
+        "worstRating": "1",
+      },
+    }));
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
@@ -164,6 +208,9 @@ export default async function PostPage({ params }: PostPageProps) {
           initialReactions={reactionsMap}
           initialUserReaction={null}
         />
+
+        {/* Reviews Section */}
+        <ReviewsSection writingId={result.writing.id} />
 
         {/* Comments Section */}
         <CommentsSection writingId={result.writing.id} />

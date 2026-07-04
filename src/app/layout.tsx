@@ -51,6 +51,7 @@ export default function RootLayout({
                   <div className="mx-auto flex flex-col items-center justify-between gap-4 md:h-14 md:flex-row max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-muted-foreground">
                     <p>&copy; 2026 linespedia. All rights reserved.</p>
                     <div className="flex gap-4">
+                      <a href="https://library.linespedia.com/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Library</a>
                       <a href="/about" className="hover:text-foreground">About</a>
                       <a href="/privacy" className="hover:text-foreground">Privacy</a>
                       <a href="/terms" className="hover:text-foreground">Terms</a>

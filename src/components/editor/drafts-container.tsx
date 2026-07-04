@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useDraftStore } from "@/lib/store";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getEmotionBadgeStyles } from "@/components/feed/post-card";
+import { getEmotionBadgeStyles } from "@/lib/utils";
 import { ArrowRight, Trash2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";

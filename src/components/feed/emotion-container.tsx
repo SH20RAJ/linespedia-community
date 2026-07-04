@@ -2,20 +2,24 @@
 
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { PostCard, getEmotionBadgeStyles } from "@/components/feed/post-card";
+import { PostCard } from "@/components/feed/post-card";
+import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface EmotionContainerProps {
   emotion: string;
 }
 
 export function EmotionContainer({ emotion }: EmotionContainerProps) {
+  const [limit, setLimit] = React.useState(10);
+
   const { data: writingsResult, isLoading } = useQuery({
-    queryKey: ["writings-emotion", emotion],
+    queryKey: ["writings-emotion", emotion, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?emotion=${emotion}&limit=30`);
+      const res = await fetch(`/api/v1/writings?emotion=${emotion}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to load emotion writings");
       const json = (await res.json()) as any;
       return json.data;
@@ -51,7 +55,21 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
             <p className="text-xs text-muted-foreground">No writings found for this emotion yet.</p>
           </div>
         ) : (
-          posts.map((post: any) => <PostCard key={post.id} post={post} />)
+          <div className="space-y-4">
+            {posts.map((post: any) => <PostCard key={post.id} post={post} />)}
+            {posts.length >= limit && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLimit((prev) => prev + 10)}
+                  className="text-xs font-mono"
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

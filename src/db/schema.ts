@@ -169,6 +169,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   following: many(follows, { relationName: "followers" }),
   notificationsReceived: many(notifications, { relationName: "recipient" }),
   notificationsActed: many(notifications, { relationName: "actor" }),
+  reviews: many(reviews),
 }));
 
 export const writingsRelations = relations(writings, ({ one, many }) => ({
@@ -179,6 +180,7 @@ export const writingsRelations = relations(writings, ({ one, many }) => ({
   reactions: many(reactions),
   bookmarks: many(bookmarks),
   comments: many(comments),
+  reviews: many(reviews),
 }));
 
 export const reactionsRelations = relations(reactions, ({ one }) => ({
@@ -220,6 +222,7 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
   replies: many(comments, {
     relationName: "replies",
   }),
+  commentLikes: many(commentLikes),
 }));
 
 export const followsRelations = relations(follows, ({ one }) => ({
@@ -253,5 +256,66 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   comment: one(comments, {
     fields: [notifications.commentId],
     references: [comments.id],
+  }),
+}));
+
+export const reviews = pgTable(
+  "reviews",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    writingId: text("writing_id")
+      .notNull()
+      .references(() => writings.id, { onDelete: "cascade" }),
+    rating: integer("rating").notNull(),
+    content: text("content"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("writing_reviews_idx").on(table.writingId),
+    index("user_reviews_idx").on(table.userId, table.writingId),
+  ]
+);
+
+export const reviewsRelations = relations(reviews, ({ one }) => ({
+  user: one(users, {
+    fields: [reviews.userId],
+    references: [users.id],
+  }),
+  writing: one(writings, {
+    fields: [reviews.writingId],
+    references: [writings.id],
+  }),
+}));
+
+export const commentLikes = pgTable(
+  "comment_likes",
+  {
+    id: text("id").primaryKey(),
+    commentId: text("comment_id")
+      .notNull()
+      .references(() => comments.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("comment_likes_idx").on(table.commentId),
+    index("user_comment_likes_idx").on(table.userId, table.commentId),
+  ]
+);
+
+export const commentLikesRelations = relations(commentLikes, ({ one }) => ({
+  comment: one(comments, {
+    fields: [commentLikes.commentId],
+    references: [comments.id],
+  }),
+  user: one(users, {
+    fields: [commentLikes.userId],
+    references: [users.id],
   }),
 }));

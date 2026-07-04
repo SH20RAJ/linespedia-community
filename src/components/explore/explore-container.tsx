@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { getEmotionBadgeStyles } from "@/components/feed/post-card";
+import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Sparkles, Hash, Award } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 
