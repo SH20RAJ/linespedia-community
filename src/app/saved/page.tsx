@@ -5,6 +5,18 @@ import { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Saved Bookmarks | Linespedia",
   description: "Your curated lists and folder bookmarks on Linespedia.",
+  openGraph: {
+    title: "Saved Bookmarks | Linespedia",
+    description: "Your curated lists and folder bookmarks on Linespedia.",
+    type: "website",
+    images: [{ url: "https://linespedia.com/og-main.png", width: 1200, height: 1200, alt: "Saved Bookmarks on Linespedia" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Saved Bookmarks | Linespedia",
+    description: "Your curated lists and folder bookmarks on Linespedia.",
+    images: ["https://linespedia.com/og-main.png"],
+  },
 };
 
 export default function SavedPage() {
