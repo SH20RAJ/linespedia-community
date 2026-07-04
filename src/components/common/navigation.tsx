@@ -123,6 +123,12 @@ export function Navigation() {
                     </DropdownMenuLabel>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
+                   <DropdownMenuItem render={
+                    <Link href="/dashboard" className="cursor-pointer w-full">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      <span>Console</span>
+                    </Link>
+                  } />
                   <DropdownMenuItem render={
                     <Link href={dbUser ? `/profile/${dbUser.username}` : "#"} className="cursor-pointer w-full">
                       <User className="mr-2 h-4 w-4" />
@@ -230,7 +236,8 @@ export function Navigation() {
                     {dbUser && (
                       <>
                         <div className="border-t border-border/10 my-2" />
-                        <Link href={`/profile/${dbUser.username}`} className="text-muted-foreground hover:text-foreground transition-colors py-1">Profile</Link>
+                         <Link href={`/profile/${dbUser.username}`} className="text-muted-foreground hover:text-foreground transition-colors py-1">Profile</Link>
+                        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors py-1">Console</Link>
                         <Link href="/notifications" className="text-muted-foreground hover:text-foreground transition-colors py-1">Notifications</Link>
                         <Link href="/saved" className="text-muted-foreground hover:text-foreground transition-colors py-1">Saved</Link>
                         <Link href="/drafts" className="text-muted-foreground hover:text-foreground transition-colors py-1">Drafts</Link>

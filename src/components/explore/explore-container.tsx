@@ -1,11 +1,14 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { getEmotionBadgeStyles } from "@/lib/utils";
-import { Sparkles, Hash, Award } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
+import { Sparkles, Hash, Trophy, BookOpen } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const EMOTIONS = [
   { name: "Love", slug: "love", desc: "Poems, shayari, and letters of affection." },
@@ -33,6 +36,19 @@ const TRENDING_TAGS = [
 ];
 
 export function ExploreContainer() {
+  // Fetch global top writers
+  const { data: topAuthorsResult, isLoading: isLoadingAuthors } = useQuery({
+    queryKey: ["global-top-authors"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/users/top");
+      if (!res.ok) throw new Error("Failed to load top authors");
+      const json = (await res.json()) as any;
+      return json.data;
+    },
+  });
+
+  const topAuthors = topAuthorsResult || [];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-12">
       {/* Header */}
@@ -41,7 +57,7 @@ export function ExploreContainer() {
           <Sparkles className="h-5 w-5 text-amber-500" />
           Explore
         </h1>
-        <p className="text-xs text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1 font-mono">
           Discover writings filtered by emotions, trending tags, and top writers.
         </p>
       </div>
@@ -49,7 +65,7 @@ export function ExploreContainer() {
       <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Emotions grid */}
         <div className="md:col-span-2 space-y-6">
-          <h2 className="text-sm font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+          <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase font-mono">
             Browse by Emotion
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -76,11 +92,54 @@ export function ExploreContainer() {
           </div>
         </div>
 
-        {/* Sidebar: Tags & Writers */}
+        {/* Sidebar: Tags & Top Writers */}
         <div className="space-y-8">
+          {/* Top Writers Widget */}
+          <div className="border border-border/40 p-4 bg-muted/5 space-y-4 font-mono">
+            <h3 className="text-xs font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5 border-b border-border/10 pb-2">
+              <Trophy className="h-3.5 w-3.5 text-amber-500" />
+              Top Writers
+            </h3>
+            
+            {isLoadingAuthors ? (
+              <div className="space-y-3">
+                <Skeleton className="h-8 w-full" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ) : topAuthors.length === 0 ? (
+              <p className="text-[10px] text-muted-foreground">No writers ranked yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {topAuthors.slice(0, 3).map((item: any, idx: number) => (
+                  <Link
+                    key={item.user.id}
+                    href={`/profile/${item.user.username}`}
+                    className="flex items-center gap-3 group hover:bg-muted/10 p-1 rounded transition-colors"
+                  >
+                    <span className="text-[10px] font-bold text-muted-foreground/60 w-3">#{idx + 1}</span>
+                    <Avatar className="h-6 w-6 border border-border/30">
+                      <AvatarImage src={item.user.avatar || ""} />
+                      <AvatarFallback className="text-[8px]">
+                        {item.user.username.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="text-xs font-bold truncate text-foreground group-hover:underline">
+                        {item.user.displayName || item.user.username}
+                      </h4>
+                      <p className="text-[9px] text-muted-foreground">
+                        {item.writingsCount} {item.writingsCount === 1 ? "post" : "posts"}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Trending Tags */}
-          <div className="border border-border/40 p-4 bg-muted/5 space-y-3">
-            <h3 className="text-xs font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5">
+          <div className="border border-border/40 p-4 bg-muted/5 space-y-3 font-mono">
+            <h3 className="text-xs font-bold tracking-wider text-muted-foreground uppercase flex items-center gap-1.5 border-b border-border/10 pb-2">
               <Hash className="h-3.5 w-3.5" />
               Trending Tags
             </h3>
@@ -98,13 +157,13 @@ export function ExploreContainer() {
           </div>
 
           {/* Guidelines */}
-          <div className="border border-border/40 p-4 space-y-3 text-xs font-mono text-muted-foreground">
-            <h3 className="font-bold text-foreground flex items-center gap-1.5 uppercase tracking-wider text-[10px]">
-              <Award className="h-3.5 w-3.5" />
-              Writing Core
+          <div className="border border-border/40 p-4 text-xs space-y-2.5 font-mono text-muted-foreground">
+            <h3 className="font-bold text-foreground flex items-center gap-1.5">
+              <BookOpen className="h-3.5 w-3.5" />
+              Guidelines
             </h3>
-            <p>
-              Linespedia is built for high-fidelity reading. We value clarity of thoughts over length.
+            <p className="leading-relaxed">
+              We appreciate beautiful expressions. Share your thoughts, poetry, prose, and tags respectfully within our community guidelines.
             </p>
           </div>
         </div>

@@ -703,6 +703,99 @@ app.get("/users/top", async (c) => {
   return c.json({ data: resultData });
 });
 
+// Get dashboard statistics and user content management lists
+app.get("/dashboard/stats", async (c) => {
+  const dbUser = await getOrCreateDbUser(c);
+  if (!dbUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const userWritings = await db
+    .select({
+      id: writings.id,
+      title: writings.title,
+      slug: writings.slug,
+      views: writings.views,
+      isDraft: writings.isDraft,
+      primaryEmotion: writings.primaryEmotion,
+      createdAt: writings.createdAt,
+    })
+    .from(writings)
+    .where(eq(writings.userId, dbUser.id))
+    .orderBy(desc(writings.createdAt));
+
+  const totalViews = userWritings.reduce((sum, w) => sum + (w.views || 0), 0);
+  const publishedCount = userWritings.filter(w => !w.isDraft).length;
+  const draftCount = userWritings.filter(w => w.isDraft).length;
+
+  const followerCountRow = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(follows)
+    .where(eq(follows.followingId, dbUser.id));
+  const followersCount = Number(followerCountRow[0]?.count || 0);
+
+  const userWritingIds = userWritings.map(w => w.id);
+  let recentComments: any[] = [];
+  let recentReviews: any[] = [];
+
+  if (userWritingIds.length > 0) {
+    recentComments = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+        },
+        writingTitle: writings.title,
+        writingSlug: writings.slug,
+      })
+      .from(comments)
+      .innerJoin(users, eq(comments.userId, users.id))
+      .innerJoin(writings, eq(comments.writingId, writings.id))
+      .where(inArray(comments.writingId, userWritingIds))
+      .orderBy(desc(comments.createdAt))
+      .limit(5);
+
+    recentReviews = await db
+      .select({
+        id: reviews.id,
+        content: reviews.content,
+        rating: reviews.rating,
+        createdAt: reviews.createdAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          displayName: users.displayName,
+          avatar: users.avatar,
+        },
+        writingTitle: writings.title,
+        writingSlug: writings.slug,
+      })
+      .from(reviews)
+      .innerJoin(users, eq(reviews.userId, users.id))
+      .innerJoin(writings, eq(reviews.writingId, writings.id))
+      .where(inArray(reviews.writingId, userWritingIds))
+      .orderBy(desc(reviews.createdAt))
+      .limit(5);
+  }
+
+  return c.json({
+    data: {
+      stats: {
+        totalViews,
+        publishedCount,
+        draftCount,
+        followersCount,
+      },
+      writings: userWritings,
+      recentComments,
+      recentReviews,
+    }
+  });
+});
+
 // Get current logged-in user profile
 app.get("/users/me", async (c) => {
   const dbUser = await getOrCreateDbUser(c);
