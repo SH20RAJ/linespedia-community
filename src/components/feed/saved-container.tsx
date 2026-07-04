@@ -17,12 +17,10 @@ export function SavedContainer() {
   const { data: bookmarksResult, isLoading } = useQuery({
     queryKey: ["bookmarks"],
     queryFn: async () => {
-      // Get all writings
-      const res = await fetch("/api/v1/writings?query=&limit=100");
+      const res = await fetch("/api/v1/bookmarks");
       if (!res.ok) throw new Error("Failed to load bookmarks");
       const json = (await res.json()) as any;
-      // Filter for writings where isBookmarked is true
-      return (json.data || []).filter((w: any) => w.isBookmarked);
+      return json.data || [];
     },
     enabled: !!hexclaveUser,
   });

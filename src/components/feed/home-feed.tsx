@@ -1,12 +1,13 @@
 "use client";
 
 import * as React from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/feed/post-card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Activity, PlusCircle, Sparkles } from "lucide-react";
+import { Activity, PlusCircle, Sparkles, Trophy, MessageSquare } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Link from "next/link";
 
 interface HomeFeedProps {
@@ -15,26 +16,37 @@ interface HomeFeedProps {
 
 export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
   const [feedType, setFeedType] = React.useState(initialFeedType);
-  const [limit, setLimit] = React.useState(10);
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
-  const { data: writingsResult, isLoading, error } = useQuery({
-    queryKey: ["writings", feedType, limit],
-    queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?feedType=${feedType}&limit=${limit}`);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    error,
+  } = useInfiniteQuery({
+    queryKey: ["writings", feedType],
+    queryFn: async ({ pageParam = 0 }) => {
+      const res = await fetch(`/api/v1/writings?feedType=${feedType}&limit=10&offset=${pageParam}`);
       if (!res.ok) throw new Error("Failed to fetch writings");
       const json = (await res.json()) as any;
       return json.data;
     },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 10) return undefined;
+      return allPages.length * 10;
+    },
   });
 
-  const posts = writingsResult || [];
+  const posts = data ? data.pages.flatMap((page) => page) : [];
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && posts.length >= limit && !isLoading) {
-          setLimit((prev) => prev + 10);
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
@@ -45,7 +57,7 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
     }
 
     return () => observer.disconnect();
-  }, [posts.length, limit, isLoading]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -66,13 +78,12 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
             </Link>
           </div>
 
-          {/* Feed Tabs */}
           <Tabs value={feedType} onValueChange={setFeedType} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted/20">
-              <TabsTrigger value="latest" onClick={() => { setFeedType("latest"); setLimit(10); }} className="text-xs">Latest</TabsTrigger>
-              <TabsTrigger value="trending" onClick={() => { setFeedType("trending"); setLimit(10); }} className="text-xs">Trending</TabsTrigger>
-              <TabsTrigger value="following" onClick={() => { setFeedType("following"); setLimit(10); }} className="text-xs">Following</TabsTrigger>
-              <TabsTrigger value="for-you" onClick={() => { setFeedType("for-you"); setLimit(10); }} className="text-xs">For You</TabsTrigger>
+              <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
+              <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
+              <TabsTrigger value="following" className="text-xs">Following</TabsTrigger>
+              <TabsTrigger value="for-you" className="text-xs">For You</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -111,7 +122,7 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
                 <PostCard key={post.id} post={post} />
               ))}
               <div ref={observerTarget} className="flex justify-center py-6">
-                {posts.length >= limit ? (
+                {hasNextPage ? (
                   <span className="text-[10px] font-mono text-muted-foreground animate-pulse uppercase tracking-widest">
                     Loading more lines...
                   </span>
@@ -155,6 +166,12 @@ export function HomeFeed({ initialFeedType = "latest" }: HomeFeedProps) {
 
           {/* Random Lines Widget */}
           <RandomLinesWidget />
+
+          {/* Top Writers Widget */}
+          <TopWritersWidget />
+
+          {/* Recent Comments Widget */}
+          <RecentInteractionsWidget />
 
           {/* Guidelines */}
           <div className="border border-border/40 p-4 text-xs space-y-2.5 font-mono text-muted-foreground">
@@ -218,6 +235,100 @@ function RandomLinesWidget() {
               <h4 className="text-xs font-bold truncate">{post.title}</h4>
               <span className="text-[9px] text-muted-foreground uppercase tracking-wider">{post.primaryEmotion}</span>
             </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TopWritersWidget() {
+  const { data: topAuthorsResult, isLoading } = useQuery({
+    queryKey: ["home-top-authors"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/users/top");
+      if (!res.ok) throw new Error();
+      const json = await res.json() as any;
+      return json.data || [];
+    },
+  });
+
+  const authors = topAuthorsResult || [];
+
+  return (
+    <div className="border border-border/40 p-4 bg-muted/5 font-mono">
+      <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-3 border-b border-border/10 pb-2 flex items-center gap-1.5">
+        <Trophy className="h-3.5 w-3.5 text-amber-500" />
+        Top Writers
+      </h2>
+
+      {isLoading ? (
+        <p className="text-[10px] text-muted-foreground animate-pulse">Ranking writers...</p>
+      ) : authors.length === 0 ? (
+        <p className="text-[10px] text-muted-foreground">No authors ranked.</p>
+      ) : (
+        <div className="space-y-3">
+          {authors.slice(0, 3).map((item: any, idx: number) => (
+            <Link
+              key={item.user.id}
+              href={`/profile/${item.user.username}`}
+              className="flex items-center gap-2 group"
+            >
+              <span className="text-[10px] font-bold text-muted-foreground/60 w-3">#{idx + 1}</span>
+              <Avatar className="h-5 w-5">
+                <AvatarImage src={item.user.avatar || ""} />
+                <AvatarFallback className="text-[8px]">{item.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <h4 className="text-xs font-bold truncate group-hover:underline text-foreground">
+                  {item.user.displayName || item.user.username}
+                </h4>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RecentInteractionsWidget() {
+  const { data: commentsResult, isLoading } = useQuery({
+    queryKey: ["home-recent-comments"],
+    queryFn: async () => {
+      const res = await fetch("/api/v1/interactions/recent");
+      if (!res.ok) throw new Error();
+      const json = await res.json() as any;
+      return json.data || [];
+    },
+  });
+
+  const comments = commentsResult || [];
+
+  return (
+    <div className="border border-border/40 p-4 bg-muted/5 font-mono">
+      <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-3 border-b border-border/10 pb-2 flex items-center gap-1.5">
+        <MessageSquare className="h-3.5 w-3.5 text-indigo-500" />
+        Recent Comments
+      </h2>
+
+      {isLoading ? (
+        <p className="text-[10px] text-muted-foreground animate-pulse">Loading comments...</p>
+      ) : comments.length === 0 ? (
+        <p className="text-[10px] text-muted-foreground">No recent comments.</p>
+      ) : (
+        <div className="space-y-3">
+          {comments.map((c: any) => (
+            <div key={c.id} className="text-[11px] space-y-1">
+              <div className="flex items-baseline gap-1">
+                <span className="font-bold text-foreground">@{c.user.username}</span>
+                <span className="text-[9px] text-muted-foreground">on</span>
+                <Link href={`/post/${c.writingSlug}`} className="underline truncate font-bold text-foreground">
+                  {c.writingTitle}
+                </Link>
+              </div>
+              <p className="text-muted-foreground line-clamp-2 italic">"{c.content}"</p>
+            </div>
           ))}
         </div>
       )}

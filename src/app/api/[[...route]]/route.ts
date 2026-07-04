@@ -796,6 +796,55 @@ app.get("/dashboard/stats", async (c) => {
   });
 });
 
+// Get all bookmarks for logged-in user
+app.get("/bookmarks", async (c) => {
+  const dbUser = await getOrCreateDbUser(c);
+  if (!dbUser) return c.json({ error: "Unauthorized" }, 401);
+
+  const list = await db
+    .select({
+      writing: writings,
+      author: users,
+      folderName: bookmarks.folderName,
+    })
+    .from(bookmarks)
+    .innerJoin(writings, eq(bookmarks.writingId, writings.id))
+    .innerJoin(users, eq(writings.userId, users.id))
+    .where(eq(bookmarks.userId, dbUser.id));
+
+  const data = list.map((item) => ({
+    ...item.writing,
+    author: item.author,
+    isBookmarked: true,
+    bookmarkFolder: item.folderName || "All",
+  }));
+
+  return c.json({ data });
+});
+
+// Get recent global interactions (comments)
+app.get("/interactions/recent", async (c) => {
+  const listComments = await db
+    .select({
+      id: comments.id,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      user: {
+        username: users.username,
+        displayName: users.displayName,
+      },
+      writingSlug: writings.slug,
+      writingTitle: writings.title,
+    })
+    .from(comments)
+    .innerJoin(users, eq(comments.userId, users.id))
+    .innerJoin(writings, eq(comments.writingId, writings.id))
+    .orderBy(desc(comments.createdAt))
+    .limit(3);
+
+  return c.json({ data: listComments });
+});
+
 // Get current logged-in user profile
 app.get("/users/me", async (c) => {
   const dbUser = await getOrCreateDbUser(c);
