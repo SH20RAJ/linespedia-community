@@ -7,12 +7,15 @@ Linespedia is a writing-first, typography-focused social community platform wher
 ## 🚀 Key Features
 
 - **Emotion-Driven Cataloging**: Explore and publish writings categorized by emotions: *Love, Sad, Hope, Peace, Motivation, Anger, Fear, Humor, Nostalgia, Dream, Gratitude, and Mystery*.
+- **WordPress-like Writer Console (`/dashboard`)**: A comprehensive studio featuring real-time views and follower statistics, publication manager (edit/delete published writings and drafts), and quick cloud draft saving.
+- **Admin Control Center (`/admin`)**: Secure administrative panel with sidebar navigation, stats overview cards, and complete moderation tables for writings, users, reviews, and comments.
+- **Flicker-Free Infinite Scroll**: Optimized Facebook-like infinite loading using `SWRInfinite` offset-based pagination to avoid layout resets and maintain scroll positions.
+- **Top Writers Leaderboard**: Leaderboard widgets on the homepage, explore section, and emotion pages ranking authors by publication counts and bios.
+- **Sitemap & RSS Feeds**: Automated Dynamic RSS feed (`/feed.xml`) and dynamic Edge-optimized sitemap (`/sitemap.xml`) capped at 50,000 URLs to support search engine indexing.
 - **Hexclave Authentication**: Seamless authentication using Stack Auth (Hexclave) Cloud Identity Provider.
-- **TipTap Canvas Editor**: A distraction-free typography rich editor with local auto-saving draft recovery.
-- **Interactive Disccussion Threads**: Nested comments and structured reaction systems (Love, Sad, Hope, Peace, etc.).
+- **TipTap Canvas Editor**: A distraction-free typography-rich editor with local auto-saving draft recovery.
+- **Interactive Discussion Threads**: Nested comments and structured reaction systems (Love, Sad, Hope, Peace, etc.).
 - **Search Palette**: Command-K search overlay for exploring writings, tags, and users instantly.
-- **Premium UX Design**: Custom, clean typographic styling utilizing pure shadcn UI components.
-- **High-fidelity SEO & JSON-LD**: Pure Server Component routing (`page.tsx`) with dynamic SEO tags, dynamic RSS feeds (`/feed.xml`), sitemaps, and rich metadata schemas.
 
 ---
 
@@ -20,8 +23,9 @@ Linespedia is a writing-first, typography-focused social community platform wher
 
 - **Framework**: Next.js (App Router, Server Components)
 - **API Routing**: Hono.js catch-all API handler
-- **Database**: Neon DB (PostgreSQL) Serverless
+- **Database**: Cloudflare D1 / PostgreSQL Serverless
 - **ORM**: Drizzle ORM
+- **Client Caching**: Vercel `SWR` & `swr/infinite` (completely replacing React Query)
 - **Authentication**: `@hexclave/next`
 - **UI Components**: Shadcn UI & Base UI
 - **Rich Text Editor**: TipTap Editor
@@ -35,13 +39,16 @@ Linespedia is a writing-first, typography-focused social community platform wher
 ├── src
 │   ├── app                 # Next.js App Router (Pure Server Components)
 │   │   ├── api             # Hono catch-all endpoints
-│   │   ├── explore         # Emotion categories browsing
-│   │   ├── post            # Dynamic single reading pages
+│   │   ├── explore         # Emotion categories browsing & leaderboard
+│   │   ├── dashboard       # Writer console studio
+│   │   ├── post            # Dynamic single reading pages & comments
+│   │   ├── sitemap.xml     # Dynamic Edge XML sitemap
 │   │   └── profile         # User bio & statistic tabs
 │   ├── components          # Reusable UI & Client Containers
+│   │   ├── admin           # Moderation panel & admin sidebar
 │   │   ├── common          # Navigation header, providers, search palette
 │   │   ├── editor          # TipTap editor & drafts listing
-│   │   ├── feed            # Post cards, comments, bookmarking, reactions
+│   │   ├── feed            # Post cards, comments, reviews, bookmarking
 │   │   └── ui              # Primitive styled shadcn components
 │   ├── db                  # Database configuration & schema declarations
 │   └── hexclave            # Authentication clients (Client/Server)
