@@ -805,33 +805,36 @@ app.post("/admin/seed", async (c) => {
       { title: "Where the Mind is Without Fear", primaryEmotion: "motivation", language: "en", content: `<p>Where the mind is without fear and the head is held high;<br>Where knowledge is free;<br>Where the world has not been broken up into fragments<br>By narrow domestic walls;</p>`, readingTime: 1, tags: ["#freedom", "#tagore", "#motivation"] },
     ];
 
-    const authors = ["Rumi", "Kabir", "Ghalib", "Wordsworth", "Tagore", "Emily Dickinson", "Robert Frost", "Shakespeare"];
+    const authors = ["Rumi", "Kabir", "Ghalib", "Wordsworth", "Tagore", "Emily Dickinson", "Robert Frost", "Shakespeare", "Neruda", "Baudelaire"];
     const quotes = [
-      { text: "What you seek is seeking you.", emotion: "hope", tags: ["#rumi", "#hope", "#spiritual"] },
-      { text: "Only from the heart can you touch the sky.", emotion: "love", tags: ["#rumi", "#love", "#heart"] },
-      { text: "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.", emotion: "peace", tags: ["#rumi", "#wisdom", "#peace"] },
-      { text: "Do not feel lonely, the entire universe is inside you.", emotion: "hope", tags: ["#rumi", "#hope", "#universe"] },
-      { text: "Bura jo dekhan main chala, bura na milya koy. Jo dil khoja aapna, mujhse bura na koy.", emotion: "peace", tags: ["#kabir", "#peace", "#wisdom"] },
-      { text: "Lali mere lal ki, jit dekhoon tit lal. Lali dekhan main gayi, main bhi ho gayi lal.", emotion: "love", tags: ["#kabir", "#love", "#devotion"] },
-      { text: "Dil-e-nadaan tujhe hua kya hai, aakhir is dard ki dava kya hai.", emotion: "sad", tags: ["#ghalib", "#sad", "#love"] },
-      { text: "Ishq ne 'Ghalib' nikamma kar diya, varna hum bhi aadmi the kaam ke.", emotion: "nostalgia", tags: ["#ghalib", "#nostalgia", "#love"] },
-      { text: "Clouds come floating into my life, no longer to usher storm but to add color.", emotion: "peace", tags: ["#tagore", "#peace", "#life"] },
-      { text: "If you shed tears when you miss the sun, you also miss the stars.", emotion: "hope", tags: ["#tagore", "#hope", "#stars"] },
-      { text: "The woods are lovely, dark and deep, but I have promises to keep.", emotion: "peace", tags: ["#frost", "#peace", "#woods"] },
-      { text: "Love all, trust a few, do wrong to none.", emotion: "peace", tags: ["#shakespeare", "#peace", "#wisdom"] }
+      { text: "What you seek is seeking you.", emotion: "hope", lang: "en", tags: ["#rumi", "#hope", "#spiritual"] },
+      { text: "Only from the heart can you touch the sky.", emotion: "love", lang: "en", tags: ["#rumi", "#love", "#heart"] },
+      { text: "Yesterday I was clever, so I wanted to change the world. Today I am wise, so I am changing myself.", emotion: "peace", lang: "en", tags: ["#rumi", "#wisdom", "#peace"] },
+      { text: "Do not feel lonely, the entire universe is inside you.", emotion: "hope", lang: "en", tags: ["#rumi", "#hope", "#universe"] },
+      { text: "Bura jo dekhan main chala, bura na milya koy. Jo dil khoja aapna, mujhse bura na koy.", emotion: "peace", lang: "hi", tags: ["#kabir", "#peace", "#wisdom"] },
+      { text: "Lali mere lal ki, jit dekhoon tit lal. Lali dekhan main gayi, main bhi ho gayi lal.", emotion: "love", lang: "hi", tags: ["#kabir", "#love", "#devotion"] },
+      { text: "Dil-e-nadaan tujhe hua kya hai, aakhir is dard ki dava kya hai.", emotion: "sad", lang: "ur", tags: ["#ghalib", "#sad", "#love"] },
+      { text: "Ishq ne 'Ghalib' nikamma kar diya, varna hum bhi aadmi the kaam ke.", emotion: "nostalgia", lang: "ur", tags: ["#ghalib", "#nostalgia", "#love"] },
+      { text: "Clouds come floating into my life, no longer to usher storm but to add color.", emotion: "peace", lang: "en", tags: ["#tagore", "#peace", "#life"] },
+      { text: "If you shed tears when you miss the sun, you also miss the stars.", emotion: "hope", lang: "en", tags: ["#tagore", "#hope", "#stars"] },
+      { text: "The woods are lovely, dark and deep, but I have promises to keep.", emotion: "peace", lang: "en", tags: ["#frost", "#peace", "#woods"] },
+      { text: "Love all, trust a few, do wrong to none.", emotion: "peace", lang: "en", tags: ["#shakespeare", "#peace", "#wisdom"] },
+      { text: "Puedo escribir los versos más tristes esta noche. Escribir, por ejemplo: 'La noche está estrellada, y tiritan, azules, los astros, a lo lejos.'", emotion: "sad", lang: "es", tags: ["#neruda", "#sad", "#poetry"] },
+      { text: "Para mi corazón basta tu pecho, para tu libertad bastan mis alas.", emotion: "love", lang: "es", tags: ["#neruda", "#love", "#poetry"] },
+      { text: "Sois sage, ô ma Douleur, et tiens-toi plus tranquille. Tu réclamais le Soir; il descend; le voici.", emotion: "sad", lang: "fr", tags: ["#baudelaire", "#sad", "#poetry"] }
     ];
 
-    // Seed 45 additional real distinct writings to exceed 50+ database writings
+    // Seed 45 additional real distinct writings in different languages to exceed 50+ database writings
     for (let i = 0; i < 45; i++) {
       const quote = quotes[i % quotes.length];
       const author = authors[i % authors.length];
       seedWritings.push({
         title: `${quote.text.split(" ").slice(0, 4).join(" ")}... (Part ${i + 1})`,
         primaryEmotion: quote.emotion,
-        language: "en",
+        language: quote.lang,
         content: `<p>${quote.text}</p><p>— Shared by ${author}</p>`,
         readingTime: 1,
-        tags: [...quote.tags, `#part${i+1}`]
+        tags: [...quote.tags, `#part${i + 1}`]
       });
     }
 

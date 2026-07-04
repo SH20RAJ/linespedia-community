@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/feed/post-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Globe } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const LANG_NAMES: Record<string, string> = {
   en: "English",
@@ -21,10 +22,12 @@ interface LanguageContainerProps {
 export function LanguageContainer({ lang }: LanguageContainerProps) {
   const languageName = LANG_NAMES[lang] || lang;
 
+  const [limit, setLimit] = React.useState(10);
+
   const { data: writingsResult, isLoading } = useQuery({
-    queryKey: ["writings-lang", lang],
+    queryKey: ["writings-lang", lang, limit],
     queryFn: async () => {
-      const res = await fetch(`/api/v1/writings?language=${lang}&limit=30`);
+      const res = await fetch(`/api/v1/writings?language=${lang}&limit=${limit}`);
       if (!res.ok) throw new Error("Failed to load language writings");
       const json = (await res.json()) as any;
       return json.data;
@@ -56,7 +59,21 @@ export function LanguageContainer({ lang }: LanguageContainerProps) {
             <p className="text-xs text-muted-foreground">No writings found in this language.</p>
           </div>
         ) : (
-          posts.map((post: any) => <PostCard key={post.id} post={post} />)
+          <div className="space-y-4">
+            {posts.map((post: any) => <PostCard key={post.id} post={post} />)}
+            {posts.length >= limit && (
+              <div className="flex justify-center pt-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setLimit((prev) => prev + 10)}
+                  className="text-xs font-mono"
+                >
+                  Load More
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
