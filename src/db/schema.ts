@@ -42,6 +42,7 @@ export const writings = pgTable(
     readingTime: integer("reading_time").default(0).notNull(), // in minutes
     views: integer("views").default(0).notNull(),
     isDraft: boolean("is_draft").default(false).notNull(),
+    parentWritingId: text("parent_writing_id"),
     publishedAt: timestamp("published_at", { withTimezone: true, mode: "date" }),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" }).defaultNow().notNull(),

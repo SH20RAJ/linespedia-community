@@ -30,6 +30,7 @@ export function CreateContainer() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const recoverId = searchParams.get("recoverId");
+  const duetOf = searchParams.get("duetOf");
 
   // Require authentication UX redirect
   const user = useUser({ or: "redirect" });
@@ -70,6 +71,30 @@ export function CreateContainer() {
         .finally(() => {
           setIsLoadingDraft(false);
         });
+    } else if (duetOf) {
+      setIsLoadingDraft(true);
+      fetch(`/api/v1/writings/${duetOf}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch original writing");
+          return res.json();
+        })
+        .then((json: any) => {
+          const w = json.data?.writing;
+          const a = json.data?.author;
+          if (w) {
+            setTitle(`Duet with ${w.title}`);
+            setPrimaryEmotion(w.primaryEmotion || "");
+            setLanguage(w.language || "en");
+            setContent(`<blockquote><strong>Original by @${a?.username || "author"}:</strong><br/>${w.content}</blockquote><p>Write your continuation lines here...</p>`);
+          }
+        })
+        .catch((e) => {
+          toast.error("Error loading original duet post");
+          console.error(e);
+        })
+        .finally(() => {
+          setIsLoadingDraft(false);
+        });
     } else {
       const existingDraft = drafts["new-writing"];
       if (existingDraft) {
@@ -79,7 +104,7 @@ export function CreateContainer() {
         setTagsInput(existingDraft.tags?.join(", ") || "");
       }
     }
-  }, [recoverId, drafts]);
+  }, [recoverId, duetOf]);
 
   // Auto-save local draft changes (only for new posts, not edits)
   React.useEffect(() => {
@@ -141,6 +166,7 @@ export function CreateContainer() {
           language,
           tags: parsedTags,
           isDraft,
+          parentWritingId: duetOf || null,
         }),
       });
 

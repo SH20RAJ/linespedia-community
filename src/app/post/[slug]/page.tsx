@@ -5,13 +5,14 @@ import { notFound } from "next/navigation";
 import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Clock, Eye } from "lucide-react";
+import { Clock, Eye, GitFork } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
 import { ReviewsSection } from "@/components/feed/reviews";
 import { QuoteCardModal } from "@/components/feed/quote-card-modal";
+import { ZenReadingMode } from "@/components/feed/zen-reading-mode";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -74,6 +75,36 @@ export default async function PostPage({ params }: PostPageProps) {
     .update(writings)
     .set({ views: result.writing.views + 1 })
     .where(eq(writings.id, result.writing.id));
+
+  // Query Parent writing if any
+  let parentWriting = null;
+  if (result.writing.parentWritingId) {
+    const [p] = await db
+      .select({
+        title: writings.title,
+        slug: writings.slug,
+        authorName: users.displayName,
+        authorUsername: users.username,
+      })
+      .from(writings)
+      .innerJoin(users, eq(writings.userId, users.id))
+      .where(eq(writings.id, result.writing.parentWritingId));
+    parentWriting = p || null;
+  }
+
+  // Query Child duets if any
+  const childDuets = await db
+    .select({
+      id: writings.id,
+      title: writings.title,
+      slug: writings.slug,
+      authorName: users.displayName,
+      authorUsername: users.username,
+    })
+    .from(writings)
+    .innerJoin(users, eq(writings.userId, users.id))
+    .where(and(eq(writings.parentWritingId, result.writing.id), eq(writings.isDraft, false)))
+    .limit(5);
 
   // Get aggregated reaction counts
   const dbReactions = await db
@@ -188,6 +219,17 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight text-foreground">{result.writing.title}</h1>
 
+          {parentWriting && (
+            <div className="flex items-center gap-1.5 text-xs text-indigo-400 font-mono bg-indigo-950/20 p-2 border border-indigo-500/10 w-fit">
+              <GitFork className="h-3.5 w-3.5 text-indigo-400" />
+              <span>Duet continuation of</span>
+              <Link href={`/post/${parentWriting.slug}`} className="font-bold hover:underline">
+                {parentWriting.title}
+              </Link>
+              <span>by @{parentWriting.authorUsername}</span>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 pt-2">
             <Link href={`/profile/${result.author.username}`}>
               <Avatar className="h-8 w-8">
@@ -229,12 +271,24 @@ export default async function PostPage({ params }: PostPageProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            <ZenReadingMode
+              title={result.writing.title}
+              authorName={result.author.displayName || result.author.username}
+              content={result.writing.content}
+            />
             <QuoteCardModal
               content={result.writing.content}
               title={result.writing.title}
               authorName={result.author.displayName || result.author.username}
               postUrl={`https://linespedia.com/post/${result.writing.slug}`}
             />
+            <Link
+              href={`/create?duetOf=${result.writing.id}`}
+              className="inline-flex items-center justify-center gap-1.5 rounded-none text-xs font-mono font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3"
+            >
+              <GitFork className="h-3.5 w-3.5" />
+              Duet
+            </Link>
             <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
           </div>
         </div>
@@ -259,6 +313,30 @@ export default async function PostPage({ params }: PostPageProps) {
             <ReviewsSection writingId={result.writing.id} />
           </TabsContent>
         </Tabs>
+
+        {/* Duet Continuations Section */}
+        {childDuets.length > 0 && (
+          <div className="space-y-4 pt-6 border-t border-border/20 font-mono">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-emerald-500 flex items-center gap-1.5">
+              <GitFork className="h-3.5 w-3.5" />
+              Duet Continuations ({childDuets.length})
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {childDuets.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/post/${item.slug}`}
+                  className="block p-3 border border-emerald-500/20 hover:border-emerald-500/50 transition-colors bg-emerald-950/5 space-y-1.5 hover:bg-emerald-950/10"
+                >
+                  <h4 className="text-xs font-bold truncate text-foreground">{item.title}</h4>
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Continued by @{item.authorUsername}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Related Writings Section */}
         {related.length > 0 && (

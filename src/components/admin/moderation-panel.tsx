@@ -4,7 +4,7 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { ShieldAlert, Trash2, UserMinus, FileText, Users, Database, Star, MessageSquare, LayoutDashboard } from "lucide-react";
+import { ShieldAlert, Trash2, UserMinus, FileText, Users, Database, Star, MessageSquare, LayoutDashboard, Sparkles, Copy, Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 interface ModerationPanelProps {
@@ -12,7 +12,7 @@ interface ModerationPanelProps {
 }
 
 export function ModerationPanel({ passcode }: ModerationPanelProps) {
-  const [activeTab, setActiveTab] = React.useState<"overview" | "writings" | "users" | "comments" | "reviews" | "seed">("overview");
+  const [activeTab, setActiveTab] = React.useState<"overview" | "writings" | "users" | "comments" | "reviews" | "digest" | "seed">("overview");
   const [writingsList, setWritingsList] = React.useState<any[]>([]);
   const [usersList, setUsersList] = React.useState<any[]>([]);
   const [commentsList, setCommentsList] = React.useState<any[]>([]);
@@ -198,6 +198,7 @@ export function ModerationPanel({ passcode }: ModerationPanelProps) {
     { key: "users", label: `Users (${usersList.length})`, icon: Users },
     { key: "comments", label: `Comments (${commentsList.length})`, icon: MessageSquare },
     { key: "reviews", label: `Reviews (${reviewsList.length})`, icon: Star },
+    { key: "digest", label: "Weekly Digest", icon: Sparkles },
     { key: "seed", label: "Database Seed", icon: Database },
   ] as const;
 
@@ -435,6 +436,8 @@ export function ModerationPanel({ passcode }: ModerationPanelProps) {
               </tbody>
             </table>
           </div>
+        ) : activeTab === "digest" ? (
+          <WeeklyDigestWorkspace />
         ) : (
           <div className="border border-border/40 p-6 space-y-4 bg-muted/5 font-mono text-xs max-w-lg">
             <h3 className="font-bold flex items-center gap-2">
@@ -447,6 +450,84 @@ export function ModerationPanel({ passcode }: ModerationPanelProps) {
             <Button onClick={handleSeed} disabled={isSeeding} size="sm" className="cursor-pointer">
               {isSeeding ? "Seeding..." : "Seed Database"}
             </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WeeklyDigestWorkspace() {
+  const [htmlCode, setHtmlCode] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+
+  const fetchDigest = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/v1/admin/weekly-digest");
+      if (!res.ok) throw new Error("Failed to fetch weekly digest");
+      const json = await res.json() as any;
+      setHtmlCode(json.html || "");
+      toast.success("Digest generated!");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to generate digest");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCopy = () => {
+    if (!htmlCode) return;
+    navigator.clipboard.writeText(htmlCode);
+    setCopied(true);
+    toast.success("Newsletter HTML copied to clipboard!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="border border-border/40 p-6 space-y-6 bg-muted/5 font-mono text-xs text-slate-300 w-full max-w-2xl">
+      <div className="space-y-1">
+        <h3 className="font-bold flex items-center gap-2 text-foreground">
+          <Sparkles className="h-4 w-4 text-indigo-400" />
+          Weekly Newsletter Digest Creator
+        </h3>
+        <p className="text-[10px] text-muted-foreground leading-relaxed">
+          Compile the top 5 highest-viewed writings into a beautiful, styled HTML email template for campaign blasts.
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <Button onClick={fetchDigest} disabled={loading} size="sm">
+          {loading ? "Generating..." : "Generate Digest HTML"}
+        </Button>
+
+        {htmlCode && (
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Raw Newsletter HTML Code</label>
+              <textarea
+                readOnly
+                value={htmlCode}
+                onClick={(e) => (e.target as any).select()}
+                className="w-full h-40 bg-slate-950 border-slate-800 text-[10px] font-mono p-3 text-indigo-300 leading-normal rounded-none"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleCopy} variant="outline" className="text-xs border-slate-800 hover:bg-slate-800 flex-1">
+                {copied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
+                {copied ? "Copied HTML!" : "Copy HTML Code"}
+              </Button>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-[10px] uppercase font-bold text-muted-foreground">Live Preview</label>
+              <div 
+                className="w-full h-80 border border-slate-800 bg-white overflow-y-auto"
+                dangerouslySetInnerHTML={{ __html: htmlCode }}
+              />
+            </div>
           </div>
         )}
       </div>

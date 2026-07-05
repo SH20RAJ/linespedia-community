@@ -273,6 +273,7 @@ const createWritingSchema = z.object({
   tags: z.array(z.string()).default([]),
   coverImage: z.string().nullable().optional(),
   isDraft: z.boolean().default(false),
+  parentWritingId: z.string().nullable().optional(),
 });
 
 app.post("/writings", async (c) => {
@@ -285,7 +286,7 @@ app.post("/writings", async (c) => {
     return c.json({ error: parsed.error }, 400);
   }
 
-  const { title, content, primaryEmotion, secondaryEmotion, language, tags, coverImage, isDraft } = parsed.data;
+  const { title, content, primaryEmotion, secondaryEmotion, language, tags, coverImage, isDraft, parentWritingId } = parsed.data;
 
   // Calculate reading time (roughly 200 words per minute)
   const wordCount = content.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
@@ -310,6 +311,7 @@ app.post("/writings", async (c) => {
       readingTime,
       views: 0,
       isDraft,
+      parentWritingId: parentWritingId || null,
       publishedAt: isDraft ? null : new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -1027,6 +1029,119 @@ app.post("/notifications/:id/read", async (c) => {
     .where(and(eq(notifications.id, id), eq(notifications.recipientId, dbUser.id)));
 
   return c.json({ success: true });
+});
+
+app.get("/admin/weekly-digest", async (c) => {
+  try {
+    const list = await db
+      .select({
+        id: writings.id,
+        title: writings.title,
+        slug: writings.slug,
+        content: writings.content,
+        primaryEmotion: writings.primaryEmotion,
+        views: writings.views,
+        authorName: users.displayName,
+        authorUsername: users.username,
+      })
+      .from(writings)
+      .innerJoin(users, eq(writings.userId, users.id))
+      .where(eq(writings.isDraft, false))
+      .orderBy(desc(writings.views))
+      .limit(5);
+
+    const itemsHtml = list
+      .map((item, idx) => {
+        const excerpt = item.content.replace(/<[^>]*>/g, "").slice(0, 150) + "...";
+        return `
+        <div style="margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid #e2e8f0;">
+          <h3 style="font-family: Georgia, serif; font-size: 18px; margin: 0 0 4px 0; color: #0f172a;">
+            #${idx + 1} ${item.title}
+          </h3>
+          <p style="font-family: monospace; font-size: 11px; margin: 0 0 12px 0; color: #64748b; text-transform: uppercase;">
+            By @${item.authorUsername} &middot; Mood: ${item.primaryEmotion} &middot; ${item.views} views
+          </p>
+          <p style="font-family: Georgia, serif; font-size: 14px; line-height: 1.6; margin: 0 0 12px 0; color: #334155; font-style: italic;">
+            "${excerpt}"
+          </p>
+          <a href="https://linespedia.com/post/${item.slug}" style="font-family: monospace; font-size: 12px; color: #4f46e5; text-decoration: none; font-weight: bold;">
+            Read full poem &rarr;
+          </a>
+        </div>`;
+      })
+      .join("");
+
+    const newsletterHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Weekly Linespedia Community Digest</title>
+</head>
+<body style="background-color: #f8fafc; padding: 40px 20px; margin: 0;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; padding: 40px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+    <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #0f172a; padding-bottom: 20px;">
+      <h1 style="font-family: monospace; font-size: 24px; font-weight: bold; text-transform: uppercase; margin: 0; letter-spacing: 2px; color: #0f172a;">
+        Linespedia Digest
+      </h1>
+      <p style="font-family: monospace; font-size: 11px; color: #64748b; margin: 5px 0 0 0;">
+        The most resonance-rich classical & community literature of the week
+      </p>
+    </div>
+
+    ${itemsHtml}
+
+    <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; font-family: monospace; font-size: 10px; color: #94a3b8;">
+      <p>You received this because you are part of the Linespedia community.</p>
+      <p>&copy; ${new Date().getFullYear()} Linespedia. All rights reserved.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+    return c.json({ data: list, html: newsletterHtml });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
+});
+
+app.get("/tags/cloud", async (c) => {
+  try {
+    const list = await db
+      .select({
+        tags: writings.tags,
+        primaryEmotion: writings.primaryEmotion,
+      })
+      .from(writings)
+      .where(eq(writings.isDraft, false))
+      .limit(100);
+
+    const counts: Record<string, { count: number; emotion: string }> = {};
+    for (const item of list) {
+      const postTags = item.tags || [];
+      const emotion = item.primaryEmotion || "peace";
+      for (const tag of postTags) {
+        const cleanTag = tag.trim().toLowerCase();
+        if (!cleanTag) continue;
+        if (!counts[cleanTag]) {
+          counts[cleanTag] = { count: 0, emotion };
+        }
+        counts[cleanTag].count += 1;
+      }
+    }
+
+    const data = Object.entries(counts)
+      .map(([name, val]) => ({
+        name,
+        count: val.count,
+        emotion: val.emotion,
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 25);
+
+    return c.json({ data });
+  } catch (e: any) {
+    return c.json({ error: e.message }, 500);
+  }
 });
 
 // Admin Seed Poems Endpoint (Passcode protected: 17092006)

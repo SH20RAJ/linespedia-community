@@ -11,6 +11,7 @@ import { Eye, FileText, CheckCircle2, MessageSquare, Star, Trash2, Edit, PlusCir
 import Link from "next/link";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { StyleImprover } from "@/components/dashboard/style-improver";
 
 export function DashboardContainer() {
   const [draftTitle, setDraftTitle] = React.useState("");
@@ -129,10 +130,11 @@ export function DashboardContainer() {
         {/* Main section: tabbed lists */}
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="writings" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/20 font-mono text-[10px]">
+            <TabsList className="grid w-full grid-cols-4 bg-muted/20 font-mono text-[10px]">
               <TabsTrigger value="writings" className="text-xs uppercase tracking-wider cursor-pointer">Writings</TabsTrigger>
               <TabsTrigger value="comments" className="text-xs uppercase tracking-wider cursor-pointer">Comments</TabsTrigger>
               <TabsTrigger value="reviews" className="text-xs uppercase tracking-wider cursor-pointer">Reviews</TabsTrigger>
+              <TabsTrigger value="improver" className="text-xs uppercase tracking-wider cursor-pointer flex items-center gap-1"><Sparkles className="h-3 w-3 text-indigo-400" /> Improver</TabsTrigger>
             </TabsList>
 
             {/* Writings List tab */}
@@ -241,6 +243,11 @@ export function DashboardContainer() {
                   ))
                 )}
               </div>
+            </TabsContent>
+
+            {/* Style Improver tab */}
+            <TabsContent value="improver" className="mt-4 focus-visible:outline-none">
+              <StyleImprover />
             </TabsContent>
           </Tabs>
         </div>

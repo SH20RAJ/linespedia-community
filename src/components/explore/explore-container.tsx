@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { MoodWordCloud } from "@/components/explore/mood-word-cloud";
 
 const EMOTIONS = [
   { name: "Love", slug: "love", desc: "Shayari, letters, and verses of raw affection.", border: "hover:border-rose-500/50 hover:bg-rose-500/5" },
@@ -227,6 +228,9 @@ export function ExploreContainer() {
               ))}
             </div>
           </div>
+
+          {/* Mood Word Cloud */}
+          <MoodWordCloud />
 
           {/* Code of Conduct */}
           <div className="border border-border/40 p-5 text-xs space-y-2.5 font-mono text-muted-foreground">
