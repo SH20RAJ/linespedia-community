@@ -1029,6 +1029,111 @@ app.post("/notifications/:id/read", async (c) => {
   return c.json({ success: true });
 });
 
+// Admin Seed Poems Endpoint (Passcode protected: 17092006)
+app.post("/admin/seed-poems", async (c) => {
+  try {
+    const { passcode } = await c.req.json();
+    if (passcode !== "17092006") {
+      return c.json({ error: "Invalid passcode" }, 403);
+    }
+
+    console.log("Fetching classical poems from PoetryDB...");
+    const res = await fetch("https://poetrydb.org/random/40");
+    if (!res.ok) throw new Error("PoetryDB request failed");
+    const poems = (await res.json()) as any[];
+
+    if (!Array.isArray(poems)) {
+      throw new Error("Invalid response format from PoetryDB");
+    }
+
+    const emotions = [
+      "love",
+      "sad",
+      "hope",
+      "peace",
+      "motivation",
+      "anger",
+      "fear",
+      "humor",
+      "nostalgia",
+      "dream",
+      "gratitude",
+      "mystery",
+    ];
+
+    let seededCount = 0;
+    for (const item of poems) {
+      if (!item.title || !item.author || !item.lines) continue;
+
+      const sanitizedAuthor = item.author.trim();
+      const authorUsername = sanitizedAuthor
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "_")
+        .slice(0, 30);
+      const authorId = `author-${authorUsername}`;
+
+      const [existingUser] = await db.select().from(users).where(eq(users.id, authorId));
+      if (!existingUser) {
+        await db.insert(users).values({
+          id: authorId,
+          username: authorUsername,
+          displayName: sanitizedAuthor,
+          avatar: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(authorUsername)}`,
+          bio: `Classical author of historical literature and famous poetic verses.`,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+      }
+
+      const title = item.title.trim();
+      const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-${authorUsername}`;
+
+      const [existingPost] = await db.select().from(writings).where(eq(writings.slug, slug));
+      if (!existingPost) {
+        const contentStr = item.lines.join("\n").toLowerCase();
+        let selectedEmotion = "peace";
+        if (contentStr.includes("love") || contentStr.includes("heart") || contentStr.includes("kiss") || contentStr.includes("fair")) {
+          selectedEmotion = "love";
+        } else if (contentStr.includes("death") || contentStr.includes("grave") || contentStr.includes(" weep") || contentStr.includes("sad") || contentStr.includes("dead")) {
+          selectedEmotion = "sad";
+        } else if (contentStr.includes("hope") || contentStr.includes("bright") || contentStr.includes("light") || contentStr.includes("spring")) {
+          selectedEmotion = "hope";
+        } else if (contentStr.includes("fear") || contentStr.includes("dark") || contentStr.includes("night") || contentStr.includes("dread")) {
+          selectedEmotion = "fear";
+        } else if (contentStr.includes("gold") || contentStr.includes("dream") || contentStr.includes("star") || contentStr.includes("sleep")) {
+          selectedEmotion = "dream";
+        } else {
+          selectedEmotion = emotions[Math.floor(Math.random() * emotions.length)];
+        }
+
+        const htmlContent = `<p>${item.lines.join("<br/>")}</p>`;
+
+        await db.insert(writings).values({
+          id: crypto.randomUUID(),
+          userId: authorId,
+          title: title,
+          slug: slug,
+          content: htmlContent,
+          primaryEmotion: selectedEmotion,
+          language: "en",
+          readingTime: Math.max(1, Math.ceil(item.lines.length / 25)),
+          tags: ["#poetry", "#classical", `#${selectedEmotion}`, `#${authorUsername}`],
+          isDraft: false,
+          views: Math.floor(Math.random() * 500) + 50,
+          publishedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        seededCount++;
+      }
+    }
+
+    return c.json({ success: true, seededCount });
+  } catch (e: any) {
+    return c.json({ error: e.message || "Poetry seeding failed" }, 500);
+  }
+});
+
 // Admin Seed Endpoint (Passcode protected: 17092006)
 app.post("/admin/seed", async (c) => {
   try {

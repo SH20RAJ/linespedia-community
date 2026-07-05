@@ -10,6 +10,7 @@ import useSWR from "swr";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 const EMOTIONS = [
   { name: "Love", slug: "love", desc: "Shayari, letters, and verses of raw affection.", border: "hover:border-rose-500/50 hover:bg-rose-500/5" },
@@ -38,6 +39,24 @@ const TRENDING_TAGS = [
 
 export function ExploreContainer() {
   const [searchQuery, setSearchQuery] = React.useState("");
+  const [promptText, setPromptText] = React.useState("Write a short poem about a rainy afternoon in Paris, using the word 'reminisce'.");
+
+  const promptsList = [
+    "Write a short poem about a rainy afternoon in Paris, using the word 'reminisce'.",
+    "Draft a letter to your childhood self, using the word 'stardust'.",
+    "Express the feeling of finding peace in a crowded marketplace, using the word 'echo'.",
+    "Write a 4-line verse about a fading ember, using the word 'whisper'.",
+    "Craft a poem on the hope of a seed sprouting under winter snow, using the word 'resilient'.",
+    "Write about a mysterious clocktower that runs backwards, using the word 'entropy'.",
+    "Express anger or protest against passing time, using the word 'unforgiving'.",
+    "Write a nostalgic prose about the scent of old paperbacks, using the word 'amber'.",
+    "Describe a dream where shadows whisper secrets, using the word 'gossamer'.",
+  ];
+
+  const handleGeneratePrompt = () => {
+    const random = promptsList[Math.floor(Math.random() * promptsList.length)];
+    setPromptText(random);
+  };
 
   // Fetch global top writers using SWR
   const { data: topAuthorsResult, isLoading: isLoadingAuthors } = useSWR(
@@ -165,6 +184,29 @@ export function ExploreContainer() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Writing Prompt Generator Widget */}
+          <div className="border border-border/40 p-5 bg-indigo-950/10 space-y-4 font-mono">
+            <h3 className="text-xs font-bold tracking-wider text-indigo-400 uppercase flex items-center gap-1.5 border-b border-indigo-500/10 pb-2">
+              <Sparkles className="h-4 w-4 text-indigo-400" />
+              Prompt Machine
+            </h3>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              Stuck in writer's block? Press generate to get a fresh writing challenge.
+            </p>
+            {promptText && (
+              <div className="bg-slate-900/60 p-3 border border-indigo-500/10 text-[10px] italic leading-relaxed text-indigo-200">
+                "{promptText}"
+              </div>
+            )}
+            <Button
+              onClick={handleGeneratePrompt}
+              size="sm"
+              className="w-full text-xs bg-indigo-600 hover:bg-indigo-700 text-white font-mono rounded-none"
+            >
+              Generate Prompt
+            </Button>
           </div>
 
           {/* Trending hashtags */}

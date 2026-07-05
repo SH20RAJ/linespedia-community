@@ -11,6 +11,7 @@ import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
 import { ReviewsSection } from "@/components/feed/reviews";
+import { QuoteCardModal } from "@/components/feed/quote-card-modal";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
 import { Metadata } from "next";
@@ -227,7 +228,15 @@ export default async function PostPage({ params }: PostPageProps) {
             </span>
           </div>
 
-          <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
+          <div className="flex items-center gap-2">
+            <QuoteCardModal
+              content={result.writing.content}
+              title={result.writing.title}
+              authorName={result.author.displayName || result.author.username}
+              postUrl={`https://linespedia.com/post/${result.writing.slug}`}
+            />
+            <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
+          </div>
         </div>
 
         {/* Reactions Section */}
