@@ -125,7 +125,10 @@ export function ZenReadingMode({ title, authorName, content }: ZenReadingModePro
         Zen Mode
       </DialogTrigger>
       
-      <DialogContent className="max-w-none w-screen h-screen m-0 p-0 border-none bg-slate-950/98 backdrop-blur-md rounded-none text-slate-100 flex flex-col justify-between overflow-hidden z-50">
+      <DialogContent 
+        showCloseButton={false}
+        className="fixed inset-0 top-0 left-0 translate-x-0 translate-y-0 w-screen h-screen max-w-none m-0 p-0 border-none bg-slate-950/98 backdrop-blur-md rounded-none text-slate-100 flex flex-col justify-between overflow-hidden z-50"
+      >
         {/* Floating animated background aura */}
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-transparent to-violet-500/5 pointer-events-none animate-pulse duration-[8000ms]" />
 

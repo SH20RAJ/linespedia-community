@@ -60,7 +60,7 @@ export default function AboutPage() {
             3. Interactive Writing Suite
           </h2>
           <p className="text-xs leading-relaxed text-slate-300">
-            From our client-side **Style Improver** that shifts drafts to match literary legends, to the HTML5 **Quote Card Generator** and interactive **Poetic Duet** continuation chains, Linespedia turns creative writing into an immersive, collaborative experience.
+            From our client-side **Style Improver** that shifts drafts to match literary legends, to the **Aesthetic Quote Card Generator** (with one-click **Pinterest Pin Sharing** to share and gain traffic), the **Zen Reading Mode** (complete with screen-dimming canvas, SpeachSynthesis **AI voice narrator**, and loopable **ambient rain sounds**), and the **Community Mood Tag Cloud**, Linespedia turns creative writing into an immersive, collaborative, and beautiful journey.
           </p>
         </div>
 

@@ -14,6 +14,7 @@ import { ReviewsSection } from "@/components/feed/reviews";
 import { QuoteCardModal } from "@/components/feed/quote-card-modal";
 import { ZenReadingMode } from "@/components/feed/zen-reading-mode";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { AdSenseAd } from "@/components/common/adsense-ad";
 import Link from "next/link";
 import { Metadata } from "next";
 
@@ -91,6 +92,14 @@ export default async function PostPage({ params }: PostPageProps) {
   if (!result) {
     notFound();
   }
+
+  const emotionOgImages: Record<string, string> = {
+    love: "https://linespedia.com/og-love.png",
+    sad: "https://linespedia.com/og-sad.png",
+    hope: "https://linespedia.com/og-hope.png",
+    peace: "https://linespedia.com/og-peace.png",
+  };
+  const ogImageUrl = emotionOgImages[result.writing.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
 
   // Increment views directly in D1/Postgres on load
   await db
@@ -303,6 +312,7 @@ export default async function PostPage({ params }: PostPageProps) {
               title={result.writing.title}
               authorName={result.author.displayName || result.author.username}
               postUrl={`https://linespedia.com/post/${result.writing.slug}`}
+              ogImageUrl={ogImageUrl}
             />
             <Link
               href={`/create?duetOf=${result.writing.id}`}
@@ -321,6 +331,9 @@ export default async function PostPage({ params }: PostPageProps) {
           initialReactions={reactionsMap}
           initialUserReaction={null}
         />
+
+        {/* AdSense Article Bottom Slot */}
+        <AdSenseAd slot="article-bottom" />
 
         {/* Tabs for Comments and Reviews & Ratings */}
         <Tabs defaultValue="comments" className="w-full pt-6 border-t border-border/20">

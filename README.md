@@ -2,20 +2,19 @@
 
 Linespedia is a writing-first, typography-focused social community platform where users publish and read poems, stories, shayari, quotes, lyrics, and thoughts categorized and driven by core emotions.
 
----
-
 ## 🚀 Key Features
 
 - **Emotion-Driven Cataloging**: Explore and publish writings categorized by emotions: *Love, Sad, Hope, Peace, Motivation, Anger, Fear, Humor, Nostalgia, Dream, Gratitude, and Mystery*.
 - **WordPress-like Writer Console (`/dashboard`)**: A comprehensive studio featuring real-time views and follower statistics, publication manager (edit/delete published writings and drafts), and quick cloud draft saving.
 - **Admin Control Center (`/admin`)**: Secure administrative panel with sidebar navigation, stats overview cards, and complete moderation tables for writings, users, reviews, and comments.
-- **Flicker-Free Infinite Scroll**: Optimized Facebook-like infinite loading using `SWRInfinite` offset-based pagination to avoid layout resets and maintain scroll positions.
-- **Top Writers Leaderboard**: Leaderboard widgets on the homepage, explore section, and emotion pages ranking authors by publication counts and bios.
+- **Zen Reading Mode**: Immersive fullscreen typography overlay on post pages equipped with standard HTML5 `window.speechSynthesis` AI narration controls and a loopable background ambient rainfall sound player.
+- **Aesthetic Quote Card Generator & Pinterest Pinning**: Interactive client-side HTML5 canvas graphic card customizer supporting preloaded Unsplash abstract themes (Starry Nebula, Forest, Vintage Parchment), base64 image downloads, and a prefilled **Pinterest Pin** sharing button to drive social media traffic.
+- **Community Mood Word Cloud**: Dynamic size-weighted emotional tag cloud on the Explore page aggregating popular tags.
+- **Collaborative Poetic Duets**: Database-linked duet continuation posts connecting poems by `parentWritingId` with visual parent/child continuation chains.
+- **Weekly Community Digest Creator**: Admin studio workspace compiling the top 5 highest-viewed writings into copyable, responsive HTML email newsletter code.
+- **Google AdSense & ads.txt Verification**: Fully compliant setup with layout-level Auto Ads script integration, publisher account meta verification, compliant Privacy/About pages, and a valid public `ads.txt` listing.
+- **Flicker-Free Infinite Scroll**: Optimized Facebook-like infinite loading using `SWRInfinite` offset-based pagination.
 - **Sitemap & RSS Feeds**: Automated Dynamic RSS feed (`/feed.xml`) and dynamic Edge-optimized sitemap (`/sitemap.xml`) capped at 50,000 URLs to support search engine indexing.
-- **Hexclave Authentication**: Seamless authentication using Stack Auth (Hexclave) Cloud Identity Provider.
-- **TipTap Canvas Editor**: A distraction-free typography-rich editor with local auto-saving draft recovery.
-- **Interactive Discussion Threads**: Nested comments and structured reaction systems (Love, Sad, Hope, Peace, etc.).
-- **Search Palette**: Command-K search overlay for exploring writings, tags, and users instantly.
 
 ---
 

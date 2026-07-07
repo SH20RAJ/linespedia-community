@@ -79,9 +79,9 @@ export function CreateContainer() {
           return res.json();
         })
         .then((json: any) => {
-          const w = json.data?.writing;
+          const w = json.data;
           const a = json.data?.author;
-          if (w) {
+          if (w && w.title) {
             setTitle(`Duet with ${w.title}`);
             setPrimaryEmotion(w.primaryEmotion || "");
             setLanguage(w.language || "en");

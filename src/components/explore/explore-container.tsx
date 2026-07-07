@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MoodWordCloud } from "@/components/explore/mood-word-cloud";
+import { AdSenseAd } from "@/components/common/adsense-ad";
 
 const EMOTIONS = [
   { name: "Love", slug: "love", desc: "Shayari, letters, and verses of raw affection.", border: "hover:border-rose-500/50 hover:bg-rose-500/5" },
@@ -231,6 +232,9 @@ export function ExploreContainer() {
 
           {/* Mood Word Cloud */}
           <MoodWordCloud />
+
+          {/* AdSense Sidebar Slot */}
+          <AdSenseAd />
 
           {/* Code of Conduct */}
           <div className="border border-border/40 p-5 text-xs space-y-2.5 font-mono text-muted-foreground">

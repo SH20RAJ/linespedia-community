@@ -12,19 +12,44 @@ interface QuoteCardModalProps {
   title: string;
   authorName: string;
   postUrl: string;
+  ogImageUrl: string;
 }
 
 const THEMES = [
-  { name: "Sunset Aura", class: "bg-gradient-to-tr from-orange-500 via-rose-500 to-indigo-600 text-white" },
-  { name: "Midnight Glass", class: "bg-slate-950 border border-white/10 text-slate-100 shadow-2xl relative before:absolute before:inset-0 before:bg-gradient-to-tr before:from-violet-500/20 before:to-transparent" },
-  { name: "Emerald Serenity", class: "bg-gradient-to-tr from-emerald-600 to-teal-500 text-white" },
-  { name: "Minimalist Soft", class: "bg-muted/30 border border-border/50 text-foreground" },
-  { name: "Cyberpunk Glow", class: "bg-black border border-pink-500/30 text-pink-500 shadow-[0_0_15px_rgba(236,72,153,0.15)] font-mono" },
+  { 
+    name: "Sunset Aura", 
+    class: "bg-gradient-to-tr from-orange-500 via-rose-500 to-indigo-600 text-white",
+    type: "gradient",
+    colors: ["#f97316", "#f43f5e", "#4f46e5"]
+  },
+  { 
+    name: "Midnight Nebula", 
+    class: "bg-slate-950 text-slate-100",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1518156677180-95a2893f3e9f?w=800&auto=format&fit=crop&q=80"
+  },
+  { 
+    name: "Emerald Serenity", 
+    class: "bg-gradient-to-tr from-emerald-600 to-teal-500 text-white",
+    type: "gradient",
+    colors: ["#059669", "#14b8a6"]
+  },
+  { 
+    name: "Aesthetic Forest", 
+    class: "bg-stone-900 text-stone-100",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=80"
+  },
+  { 
+    name: "Vintage Paper", 
+    class: "bg-amber-50 text-stone-900",
+    type: "image",
+    url: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=800&auto=format&fit=crop&q=80"
+  }
 ];
 
-export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCardModalProps) {
+export function QuoteCardModal({ content, title, authorName, postUrl, ogImageUrl }: QuoteCardModalProps) {
   const cleanLines = React.useMemo(() => {
-    // Basic text extraction without requiring browser DOM APIs during SSR compilation
     if (typeof window === "undefined") return "";
     const temp = document.createElement("div");
     temp.innerHTML = content.replace(/<br\s*\/?>/gi, "\n");
@@ -40,13 +65,104 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
   const [selectedTheme, setSelectedTheme] = React.useState(0);
   const [copied, setCopied] = React.useState(false);
   const [downloading, setDownloading] = React.useState(false);
+  const [previewUrl, setPreviewUrl] = React.useState("");
+  const [imgTick, setImgTick] = React.useState(0);
 
-  const cardRef = React.useRef<HTMLDivElement>(null);
+  const loadedImagesRef = React.useRef<Record<string, HTMLImageElement>>({});
 
-  // Initialize excerpt safely on mount to prevent hydration mismatch
+  // Initialize excerpt on mount
   React.useEffect(() => {
     setExcerpt(initialExcerpt);
   }, [initialExcerpt]);
+
+  // Pre-load all theme images
+  React.useEffect(() => {
+    THEMES.forEach((t) => {
+      if (t.type === "image" && t.url) {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.src = t.url;
+        img.onload = () => {
+          loadedImagesRef.current[t.name] = img;
+          setImgTick(prev => prev + 1); // trigger preview update
+        };
+      }
+    });
+  }, []);
+
+  const drawCard = React.useCallback((ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const theme = THEMES[selectedTheme];
+
+    // Background drawing
+    if (theme.type === "image") {
+      const img = loadedImagesRef.current[theme.name];
+      if (img) {
+        ctx.drawImage(img, 0, 0, width, height);
+      } else {
+        ctx.fillStyle = "#1e293b";
+        ctx.fillRect(0, 0, width, height);
+      }
+    } else {
+      const grad = ctx.createLinearGradient(0, height, width, 0);
+      if (theme.colors && theme.colors.length >= 3) {
+        grad.addColorStop(0, theme.colors[0]);
+        grad.addColorStop(0.5, theme.colors[1]);
+        grad.addColorStop(1, theme.colors[2]);
+      } else if (theme.colors && theme.colors.length >= 2) {
+        grad.addColorStop(0, theme.colors[0]);
+        grad.addColorStop(1, theme.colors[1]);
+      }
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, width, height);
+    }
+
+    // Semi-transparent overlay to ensure text contrast on all backgrounds
+    ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+    ctx.fillRect(0, 0, width, height);
+
+    // Large quotes mark
+    ctx.fillStyle = "rgba(255, 255, 255, 0.12)";
+    ctx.font = 'bold 220px Georgia, serif';
+    ctx.fillText("“", 40, 180);
+
+    // Text colors
+    let textColor = "#ffffff";
+    let secondaryColor = "rgba(255, 255, 255, 0.85)";
+
+    ctx.fillStyle = textColor;
+    ctx.font = 'italic 25px Georgia, serif';
+
+    const lines = excerpt.split("\n");
+    let startY = 170;
+    const lineHeight = 38;
+    for (const line of lines) {
+      ctx.fillText(line, 90, startY);
+      startY += lineHeight;
+    }
+
+    // Draw Author name
+    ctx.fillStyle = secondaryColor;
+    ctx.font = 'normal 18px Georgia, serif';
+    ctx.fillText(`— ${authorName}`, 90, startY + 22);
+
+    // Draw branding
+    ctx.fillStyle = "rgba(255, 255, 255, 0.4)";
+    ctx.font = 'bold 13px monospace';
+    ctx.fillText("linespedia.com", width - 150, height - 35);
+  }, [selectedTheme, excerpt, authorName]);
+
+  // Dynamically update preview data URL on change
+  React.useEffect(() => {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = 800;
+    canvas.height = 500;
+
+    drawCard(ctx, 800, 500);
+    setPreviewUrl(canvas.toDataURL("image/png"));
+  }, [drawCard, selectedTheme, excerpt, imgTick]);
 
   const handleCopyText = () => {
     const textToCopy = `"${excerpt}"\n\n— ${authorName}\nRead on Linespedia: ${postUrl}`;
@@ -56,90 +172,16 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownloadImage = async () => {
-    if (!cardRef.current) return;
-    setDownloading(true);
+  const handleDownloadImage = () => {
     try {
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Could not create canvas context");
 
-      const width = 800;
-      const height = 500;
-      canvas.width = width;
-      canvas.height = height;
+      canvas.width = 800;
+      canvas.height = 500;
 
-      const theme = THEMES[selectedTheme];
-      if (theme.name === "Sunset Aura") {
-        const grad = ctx.createLinearGradient(0, height, width, 0);
-        grad.addColorStop(0, "#f97316");
-        grad.addColorStop(0.5, "#f43f5e");
-        grad.addColorStop(1, "#4f46e5");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
-      } else if (theme.name === "Midnight Glass") {
-        ctx.fillStyle = "#020617";
-        ctx.fillRect(0, 0, width, height);
-        const grad = ctx.createRadialGradient(width/2, height/2, 10, width/2, height/2, width);
-        grad.addColorStop(0, "rgba(139, 92, 246, 0.15)");
-        grad.addColorStop(1, "rgba(0,0,0,0)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
-      } else if (theme.name === "Emerald Serenity") {
-        const grad = ctx.createLinearGradient(0, height, width, 0);
-        grad.addColorStop(0, "#059669");
-        grad.addColorStop(1, "#14b8a6");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
-      } else if (theme.name === "Cyberpunk Glow") {
-        ctx.fillStyle = "#000000";
-        ctx.fillRect(0, 0, width, height);
-      } else {
-        ctx.fillStyle = "#0f172a";
-        ctx.fillRect(0, 0, width, height);
-      }
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.font = 'bold 180px Georgia, serif';
-      ctx.fillText("“", 50, 180);
-
-      let textColor = "#ffffff";
-      let secondaryColor = "rgba(255, 255, 255, 0.7)";
-      if (theme.name === "Minimalist Soft") {
-        textColor = "#ffffff";
-        secondaryColor = "rgba(255, 255, 255, 0.6)";
-      } else if (theme.name === "Cyberpunk Glow") {
-        textColor = "#ec4899";
-        secondaryColor = "rgba(236, 72, 153, 0.7)";
-      }
-
-      ctx.fillStyle = textColor;
-      ctx.font = 'italic 26px Georgia, serif';
-      if (theme.name === "Cyberpunk Glow") {
-        ctx.font = '22px Courier New, monospace';
-      }
-
-      const lines = excerpt.split("\n");
-      let startY = 180;
-      const lineHeight = 40;
-      for (const line of lines) {
-        ctx.fillText(line, 100, startY);
-        startY += lineHeight;
-      }
-
-      ctx.fillStyle = secondaryColor;
-      ctx.font = 'normal 20px Georgia, serif';
-      if (theme.name === "Cyberpunk Glow") {
-        ctx.font = '16px Courier New, monospace';
-      }
-      ctx.fillText(`— ${authorName}`, 100, startY + 20);
-
-      ctx.fillStyle = "rgba(255, 255, 255, 0.35)";
-      if (theme.name === "Cyberpunk Glow") {
-        ctx.fillStyle = "rgba(236, 72, 153, 0.5)";
-      }
-      ctx.font = 'bold 14px monospace';
-      ctx.fillText("linespedia.com", width - 180, height - 50);
+      drawCard(ctx, 800, 500);
 
       const dataUrl = canvas.toDataURL("image/png");
       const link = document.createElement("a");
@@ -150,9 +192,13 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
     } catch (e) {
       console.error(e);
       toast.error("Failed to generate quote card.");
-    } finally {
-      setDownloading(false);
     }
+  };
+
+  const handlePinterestShare = () => {
+    const description = `"${excerpt.slice(0, 120)}..." — Discover beautiful verses by ${authorName} on Linespedia.`;
+    const pinUrl = `https://www.pinterest.com/pin/create/button/?url=${encodeURIComponent(postUrl)}&media=${encodeURIComponent(ogImageUrl)}&description=${encodeURIComponent(description)}`;
+    window.open(pinUrl, "_blank", "width=600,height=500");
   };
 
   return (
@@ -170,6 +216,7 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
         </DialogHeader>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-4">
+          {/* Controls Left Column */}
           <div className="md:col-span-2 space-y-4">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Snippet Text</label>
@@ -192,7 +239,7 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
                       selectedTheme === idx ? "border-indigo-500 bg-slate-800 font-bold" : "border-slate-800 hover:border-slate-700 bg-slate-950"
                     }`}
                   >
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${theme.class.split(" ")[0]} ${theme.class.includes("gradient") ? theme.class : "bg-slate-700"}`} />
+                    <span className={`w-3 h-3 rounded-full shrink-0 ${theme.class ? theme.class.split(" ")[0] : "bg-slate-600"}`} />
                     {theme.name}
                   </button>
                 ))}
@@ -200,41 +247,43 @@ export function QuoteCardModal({ content, title, authorName, postUrl }: QuoteCar
             </div>
           </div>
 
+          {/* Preview & Action Buttons Right Column */}
           <div className="md:col-span-3 space-y-4 flex flex-col justify-between">
             <div className="space-y-1.5">
               <label className="text-[10px] font-bold text-muted-foreground uppercase">Preview Card</label>
-              <div
-                ref={cardRef}
-                className={`w-full aspect-[8/5] p-6 relative overflow-hidden flex flex-col justify-between select-none ${THEMES[selectedTheme].class}`}
-              >
-                <div className="absolute left-4 top-2 text-white/5 text-8xl font-serif leading-none">
-                  “
-                </div>
-
-                <div className="space-y-3 z-10">
-                  <p className="font-serif italic text-sm md:text-base leading-relaxed whitespace-pre-wrap">
-                    {excerpt || "Select your favorite lines..."}
-                  </p>
-                  <p className="font-serif text-xs opacity-80">
-                    — {authorName}
-                  </p>
-                </div>
-
-                <div className="flex justify-between items-center z-10 opacity-70 text-[9px] font-mono">
-                  <span>linespedia.com</span>
-                  <span className="truncate max-w-[120px]">{title}</span>
-                </div>
+              <div className="border border-slate-800 bg-slate-950 overflow-hidden flex items-center justify-center aspect-[8/5] w-full relative">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Card Preview"
+                    className="w-full h-full object-contain select-none"
+                  />
+                ) : (
+                  <span className="text-muted-foreground text-[10px]">Generating preview...</span>
+                )}
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button onClick={handleCopyText} variant="outline" className="flex-1 text-xs border-slate-800 hover:bg-slate-800">
+            {/* Sharing buttons grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <Button onClick={handleCopyText} variant="outline" className="text-xs border-slate-800 hover:bg-slate-800 w-full">
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
                 Copy Text
               </Button>
-              <Button onClick={handleDownloadImage} disabled={downloading} className="flex-1 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+              
+              <Button onClick={handleDownloadImage} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs w-full">
                 <Download className="h-3.5 w-3.5 mr-1" />
-                {downloading ? "Generating..." : "Download Card"}
+                Download
+              </Button>
+
+              <Button
+                onClick={handlePinterestShare}
+                className="bg-[#bd081c] hover:bg-[#bd081c]/90 text-white text-xs w-full flex items-center justify-center gap-1"
+              >
+                <svg className="h-3.5 w-3.5 fill-current shrink-0" viewBox="0 0 24 24">
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.62 11.16-.1-.95-.2-2.4.04-3.43.22-.93 1.4-5.93 1.4-5.93s-.36-.72-.36-1.77c0-1.66.96-2.9 2.12-2.9 1 0 1.48.75 1.48 1.65 0 1-.64 2.5-.97 3.89-.28 1.17.58 2.12 1.73 2.12 2.08 0 3.68-2.2 3.68-5.37 0-2.8-2.02-4.77-4.9-4.77-3.33 0-5.28 2.5-5.28 5.08 0 1 .39 2.08.88 2.68.1.12.1.22.08.33l-.33 1.34c-.05.2-.18.25-.4.15-1.5-.7-2.43-2.9-2.43-4.66 0-3.8 2.76-7.3 7.97-7.3 4.18 0 7.43 2.98 7.43 6.96 0 4.16-2.62 7.5-6.26 7.5-1.22 0-2.37-.63-2.76-1.37l-.76 2.89c-.28 1.05-1.02 2.37-1.52 3.18C10.13 23.83 11.04 24 12 24c6.63 0 12-5.37 12-12S18.63 0 12 0z"/>
+                </svg>
+                Pin
               </Button>
             </div>
           </div>
