@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+import Link from "next/link";
+import { Sparkles, Heart, ShieldCheck, Mail, Compass, HelpCircle, FileText } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "About Us | Linespedia",
@@ -19,40 +21,99 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 font-sans text-sm leading-relaxed space-y-8 text-foreground/90">
-      <div className="space-y-3 border-b border-border/20 pb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground font-mono">About Linespedia</h1>
-        <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">Our vision, core values, and community guidelines</p>
-      </div>
-
-      <div className="space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">1. Our Vision</h2>
-        <p>
-          Linespedia is a writing-first social network designed to celebrate raw emotional expression and typography. In a digital landscape dominated by fast-paced media, transient video clips, and algorithmic noise, we offer a serene oasis—a canvas built purely for writers, poets, essayists, and thinkers.
-        </p>
-        <p>
-          We believe that language is the ultimate vehicle for human connection. By focusing on typography, layout, and emotion-driven categorization, we seek to return dignity and beauty to digital reading and publishing.
+    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 space-y-12 text-slate-300">
+      {/* Title & Introduction */}
+      <div className="space-y-4 text-center pb-8 border-b border-border/20">
+        <h1 className="text-3xl sm:text-4xl font-serif font-bold text-slate-100 tracking-tight leading-tight">
+          About Linespedia
+        </h1>
+        <p className="max-w-2xl mx-auto text-sm sm:text-base text-muted-foreground font-mono leading-relaxed">
+          A dedicated, distraction-free typography oasis celebrating literature, poetry, and raw emotional resonance.
         </p>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">2. Categorization by Emotions</h2>
-        <p>
-          Unlike traditional networks organized around hashtags or topical domains, Linespedia filters the world through emotional currents. Users tag writings with primary feelings—such as <em>Love, Sad, Hope, Peace, Motivation, Nostalgia, Dream, and Gratitude</em>—allowing readers to tune in directly to the emotional wavelength they wish to experience.
-        </p>
+      {/* Grid of Main Sections */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="border border-border/40 p-6 bg-muted/5 space-y-3 font-mono">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+            <Compass className="h-4 w-4 text-indigo-400" />
+            1. Our Vision & Mission
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-300">
+            Linespedia is designed purely for writers, poets, and readers who value beautiful words. By stripping away transient video clips, algorithmic noise, and sensory overload, we provide a clean, typographic canvas where thoughts carry their true weight.
+          </p>
+        </div>
+
+        <div className="border border-border/40 p-6 bg-muted/5 space-y-3 font-mono">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+            <Heart className="h-4 w-4 text-rose-400" />
+            2. Emotional Wavebands
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-300">
+            Our platform organizes literature around emotional wavelengths. Users catalog writings by primary feelings like <em>Love, Sadness, Hope, Peace, Motivation, and Nostalgia</em>. This allows readers to find exactly the words that resonate with their current frame of mind.
+          </p>
+        </div>
+
+        <div className="border border-border/40 p-6 bg-muted/5 space-y-3 font-mono">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-emerald-400" />
+            3. Interactive Writing Suite
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-300">
+            From our client-side **Style Improver** that shifts drafts to match literary legends, to the HTML5 **Quote Card Generator** and interactive **Poetic Duet** continuation chains, Linespedia turns creative writing into an immersive, collaborative experience.
+          </p>
+        </div>
+
+        <div className="border border-border/40 p-6 bg-muted/5 space-y-3 font-mono">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-100 flex items-center gap-2">
+            <ShieldCheck className="h-4 w-4 text-blue-400" />
+            4. Content & Moderation Standards
+          </h2>
+          <p className="text-xs leading-relaxed text-slate-300">
+            We hold our community to strict, family-friendly safety standards. All user-generated content, comments, and reviews are audited continuously by our admin team using a custom moderation console to prevent spam, plagiarism, or unsafe material.
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">3. Distraction-Free Typography</h2>
-        <p>
-          Every pixel of Linespedia is crafted to maximize reading focus. Our custom-tailored editor is based on TipTap, supporting offline autosaving drafts so you never lose your creative spark. We avoid heavy layouts, ad banners, and intrusive banners, ensuring that your lines remain the primary focus.
-        </p>
+      {/* AdSense Compliance & Content Quality block */}
+      <div className="border border-border/40 p-8 bg-muted/5 space-y-6 rounded-none">
+        <h2 className="text-lg font-serif font-bold text-slate-100 tracking-tight flex items-center gap-2 border-b border-border/10 pb-3">
+          <FileText className="h-5 w-5 text-indigo-400" />
+          AdSense & Monetization Disclosures
+        </h2>
+        
+        <div className="space-y-4 text-xs font-mono leading-relaxed text-slate-300">
+          <p>
+            To fund secure cloud hosting, real-time database transactions, and ongoing engineering, Linespedia displays minimal, non-intrusive advertisements served through Google AdSense. We prioritize user experience and make sure ads never disrupt the reading layout.
+          </p>
+          
+          <div className="space-y-2">
+            <h3 className="font-bold text-slate-100 uppercase tracking-wide">Originality & Copyright Compliance</h3>
+            <p>
+              We host a blend of community-contributed contemporary poetry and curated historical literature. All historical poems are verified as public domain in accordance with standard copyright laws. Community contributors retain the ownership of their submissions under the platform's <Link href="/terms" className="underline hover:text-indigo-400">Terms of Service</Link>.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-bold text-slate-100 uppercase tracking-wide">Privacy & Cookie Management</h3>
+            <p>
+              Third-party vendors, including Google, use cookies to serve personalized ads based on a user's prior visits. You can read our comprehensive <Link href="/privacy" className="underline hover:text-indigo-400">Privacy Policy</Link> to learn how to manage these options or opt-out of cookie tracking at any time.
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">4. Who We Are</h2>
-        <p>
-          We are a collective of writers, designers, and developers who value literature, deep connections, and clean interfaces. Linespedia is built for the quiet creators and the empathetic observers. We welcome you to find your space here.
+      {/* Contact & Support info */}
+      <div className="text-center space-y-4 font-mono py-6 border-t border-border/20">
+        <div className="flex justify-center gap-2 text-xs">
+          <Link href="/privacy" className="underline hover:text-slate-100">Privacy Policy</Link>
+          <span>&middot;</span>
+          <Link href="/terms" className="underline hover:text-slate-100">Terms of Service</Link>
+          <span>&middot;</span>
+          <Link href="/contact" className="underline hover:text-slate-100">Contact Us</Link>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Questions or feedback? Reach out directly via email to <a href="mailto:support@linespedia.com" className="underline text-indigo-400">support@linespedia.com</a>.
         </p>
       </div>
     </div>

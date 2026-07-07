@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useUser, useHexclaveApp } from "@hexclave/next";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR, { mutate } from "swr";
 
 interface BookmarkButtonProps {
   writingId: string;
@@ -13,41 +13,33 @@ interface BookmarkButtonProps {
 }
 
 export function BookmarkButton({ writingId, initialBookmarked }: BookmarkButtonProps) {
-  const queryClient = useQueryClient();
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
 
   const [bookmarked, setBookmarked] = React.useState(initialBookmarked);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const mutation = useMutation({
-    mutationFn: async () => {
-      const res = await fetch(`/api/v1/writings/${writingId}/bookmark`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error("Failed to toggle bookmark");
-      return res.json();
-    },
-    onMutate: () => {
-      const prev = bookmarked;
-      setBookmarked(!prev);
-      return { prev };
-    },
-    onError: (err, variables, context) => {
-      if (context) {
-        setBookmarked(context.prev);
-      }
-      toast.error("Error updating bookmark");
-    },
-    onSuccess: (data: any) => {
-      toast.success(data.bookmarked ? "Bookmarked to folder" : "Bookmark removed");
-      queryClient.invalidateQueries({ queryKey: ["writing", writingId] });
-      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-    },
-  });
+  // Fetch all user bookmarks via SWR to keep client sync
+  const { data: bookmarkData } = useSWR(
+    hexclaveUser ? "/api/v1/bookmarks" : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to load bookmarks");
+      return res.json() as any;
+    }
+  );
 
-  const handleBookmark = () => {
+  const isBookmarkedInDb = React.useMemo(() => {
+    if (!bookmarkData?.data) return false;
+    return bookmarkData.data.some((b: any) => b.id === writingId);
+  }, [bookmarkData, writingId]);
+
+  // Sync state when DB query returns
+  React.useEffect(() => {
+    setBookmarked(isBookmarkedInDb);
+  }, [isBookmarkedInDb]);
+
+  const handleBookmark = async () => {
     if (!hexclaveUser) {
       toast("Please sign in to bookmark writings", {
         action: {
@@ -57,7 +49,35 @@ export function BookmarkButton({ writingId, initialBookmarked }: BookmarkButtonP
       });
       return;
     }
-    mutation.mutate();
+
+    if (isSubmitting) return;
+
+    // Optimistic update
+    const prevBookmarked = bookmarked;
+    setBookmarked(!prevBookmarked);
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/v1/writings/${writingId}/bookmark`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+
+      if (!res.ok) throw new Error("Failed to toggle bookmark");
+      const data = await res.json() as any;
+
+      toast.success(data.bookmarked ? "Bookmarked successfully" : "Bookmark removed");
+      
+      // Revalidate SWR Cache
+      mutate("/api/v1/bookmarks");
+    } catch (err) {
+      // Revert on error
+      setBookmarked(prevBookmarked);
+      toast.error("Error updating bookmark");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,6 +85,7 @@ export function BookmarkButton({ writingId, initialBookmarked }: BookmarkButtonP
       variant="outline"
       size="sm"
       onClick={handleBookmark}
+      disabled={isSubmitting}
       title={bookmarked ? "Remove Bookmark" : "Save Bookmark"}
       className="h-8 gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
     >

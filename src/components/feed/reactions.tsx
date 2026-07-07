@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
-import { Smile, Sparkles, Flame, Eye, Heart, HelpCircle, Trophy } from "lucide-react";
+import { Smile, Sparkles, Flame, Heart, HelpCircle, Trophy } from "lucide-react";
 import { useUser, useHexclaveApp } from "@hexclave/next";
 import { toast } from "sonner";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import useSWR, { mutate } from "swr";
 
 interface ReactionsProps {
   writingId: string;
@@ -23,60 +23,34 @@ const REACTION_TYPES = [
 ];
 
 export function ReactionsSection({ writingId, initialReactions, initialUserReaction }: ReactionsProps) {
-  const queryClient = useQueryClient();
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
 
   const [reactions, setReactions] = React.useState(initialReactions);
   const [userReaction, setUserReaction] = React.useState<string | null>(initialUserReaction);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const mutation = useMutation({
-    mutationFn: async (type: string) => {
-      const res = await fetch(`/api/v1/writings/${writingId}/reactions`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
-      });
-      if (!res.ok) throw new Error("Failed to post reaction");
-      return res.json();
-    },
-    onMutate: async (type) => {
-      // Optimistic update
-      const previousReactions = { ...reactions };
-      const previousUserReaction = userReaction;
+  // Fetch writing details client-side to get user-specific reaction states
+  const { data: writingData } = useSWR(
+    hexclaveUser ? `/api/v1/writings/${writingId}` : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to fetch writing interaction data");
+      const json = await res.json() as any;
+      return json.data;
+    }
+  );
 
-      const newReactions = { ...reactions };
-
-      // Remove previous reaction if existed
-      if (previousUserReaction) {
-        newReactions[previousUserReaction] = Math.max(0, (newReactions[previousUserReaction] || 1) - 1);
+  React.useEffect(() => {
+    if (writingData) {
+      if (writingData.reactions) {
+        setReactions(writingData.reactions);
       }
+      setUserReaction(writingData.userReaction || null);
+    }
+  }, [writingData]);
 
-      if (previousUserReaction === type) {
-        // Untoggled
-        setUserReaction(null);
-      } else {
-        // Toggled new
-        setUserReaction(type);
-        newReactions[type] = (newReactions[type] || 0) + 1;
-      }
-
-      setReactions(newReactions);
-      return { previousReactions, previousUserReaction };
-    },
-    onError: (err, type, context: any) => {
-      if (context) {
-        setReactions(context.previousReactions);
-        setUserReaction(context.previousUserReaction);
-      }
-      toast.error("Error setting reaction");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["writing", writingId] });
-    },
-  });
-
-  const handleReact = (type: string) => {
+  const handleReact = async (type: string) => {
     if (!hexclaveUser) {
       toast("Please sign in to react to writings", {
         action: {
@@ -86,7 +60,48 @@ export function ReactionsSection({ writingId, initialReactions, initialUserReact
       });
       return;
     }
-    mutation.mutate(type);
+
+    if (isSubmitting) return;
+
+    // Optimistic update
+    const previousReactions = { ...reactions };
+    const previousUserReaction = userReaction;
+    const newReactions = { ...reactions };
+
+    if (previousUserReaction) {
+      newReactions[previousUserReaction] = Math.max(0, (newReactions[previousUserReaction] || 1) - 1);
+    }
+
+    const isUntoggling = previousUserReaction === type;
+    if (isUntoggling) {
+      setUserReaction(null);
+    } else {
+      setUserReaction(type);
+      newReactions[type] = (newReactions[type] || 0) + 1;
+    }
+
+    setReactions(newReactions);
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/v1/writings/${writingId}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+
+      if (!res.ok) throw new Error("Failed to submit reaction");
+      
+      // Mutate writing cache
+      mutate(`/api/v1/writings/${writingId}`);
+    } catch (err) {
+      // Revert on error
+      setReactions(previousReactions);
+      setUserReaction(previousUserReaction);
+      toast.error("Error setting reaction");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -102,6 +117,7 @@ export function ReactionsSection({ writingId, initialReactions, initialUserReact
             variant={isActive ? "secondary" : "outline"}
             size="sm"
             onClick={() => handleReact(item.type)}
+            disabled={isSubmitting}
             className={`h-8 gap-1.5 font-mono text-[10px] uppercase tracking-wider ${
               isActive ? "bg-muted text-foreground border-foreground/35" : "text-muted-foreground"
             } ${item.color}`}

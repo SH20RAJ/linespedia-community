@@ -35,6 +35,8 @@ export default function RootLayout({
     <html lang="en" className={cn("font-mono", jetbrainsMono.variable)} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <meta name="google-adsense-account" content="ca-pub-1828915420581549" />
+        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1828915420581549" crossOrigin="anonymous"></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <HexclaveProvider app={hexclaveServerApp}>

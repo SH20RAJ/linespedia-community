@@ -67,6 +67,29 @@ export default function PrivacyPage() {
           We retain your personal data for as long as your account remains active. You can request database cleanup or permanent deletion of your profile details, publications, and comment logs by visiting your settings page or by contacting us.
         </p>
       </div>
+
+      <div className="space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">5. Third-Party Advertising and Cookies (Google AdSense)</h2>
+        <p>
+          We partner with Google AdSense to serve advertisements on our platform. To make sure you see relevant advertisements:
+        </p>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>Third-party vendors, including Google, use cookies to serve advertisements based on your prior visits to Linespedia or other websites on the Internet.</li>
+          <li>Google's use of advertising cookies (such as the DoubleClick cookie) enables it and its partners to serve personalized ads to you based on your visit history.</li>
+        </ul>
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-foreground font-mono">6. Opting Out of Personalized Ads</h2>
+        <p>
+          You have full control over cookie tracking and personalized advertising choices:
+        </p>
+        <ul className="list-disc pl-5 space-y-2">
+          <li>You can opt out of Google's personalized advertising settings by visiting the <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" className="underline text-indigo-400">Google Ads Settings</a> page.</li>
+          <li>Alternatively, you can opt out of a third-party vendor's use of cookies for personalized advertising by visiting the <a href="https://www.aboutads.info/" target="_blank" rel="noopener noreferrer" className="underline text-indigo-400">AboutAds info</a> page.</li>
+          <li>You can configure your browser to reject all cookies or block third-party trackers. Note that some site features may operate with reduced convenience as a result.</li>
+        </ul>
+      </div>
     </div>
   );
 }

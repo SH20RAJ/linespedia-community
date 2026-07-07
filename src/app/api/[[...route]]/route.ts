@@ -1201,7 +1201,7 @@ app.post("/admin/seed-poems", async (c) => {
       }
 
       const title = item.title.trim();
-      const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-${authorUsername}`;
+      const slug = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 60)}-${authorUsername}`.replace(/_/g, "-");
 
       const [existingPost] = await db.select().from(writings).where(eq(writings.slug, slug));
       if (!existingPost) {

@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { writings, users, reactions, bookmarks, reviews } from "@/db/schema";
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, like } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getEmotionBadgeStyles } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -21,32 +21,62 @@ interface PostPageProps {
   params: Promise<{ slug: string }>;
 }
 
+async function fetchPostBySlug(slug: string) {
+  const [exactResult] = await db
+    .select({
+      writing: writings,
+      author: users,
+    })
+    .from(writings)
+    .innerJoin(users, eq(writings.userId, users.id))
+    .where(eq(writings.slug, slug));
+
+  if (exactResult) return exactResult;
+
+  // Try fallback query: normalize slug by converting all underscores to hyphens
+  const prefix = slug.slice(0, 30);
+  const candidates = await db
+    .select({
+      writing: writings,
+      author: users,
+    })
+    .from(writings)
+    .innerJoin(users, eq(writings.userId, users.id))
+    .where(like(writings.slug, `${prefix}%`));
+
+  const targetNormalized = slug.toLowerCase().replace(/_/g, "-");
+  const matched = candidates.find(
+    (c) => c.writing.slug.toLowerCase().replace(/_/g, "-") === targetNormalized
+  );
+  return matched || null;
+}
+
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
-  const [result] = await db.select().from(writings).where(eq(writings.slug, slug));
+  const result = await fetchPostBySlug(slug);
   if (!result) return { title: "Writing Not Found" };
 
-  const plainText = result.content.replace(/<[^>]*>/g, "").slice(0, 160);
+  const plainText = result.writing.content.replace(/<[^>]*>/g, "").slice(0, 160);
   const emotionOgImages: Record<string, string> = {
     love: "https://linespedia.com/og-love.png",
     sad: "https://linespedia.com/og-sad.png",
     hope: "https://linespedia.com/og-hope.png",
     peace: "https://linespedia.com/og-peace.png",
   };
-  const ogImageUrl = emotionOgImages[result.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
+  const ogImageUrl = emotionOgImages[result.writing.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
 
   return {
-    title: `${result.title} | Linespedia`,
+    title: `${result.writing.title} | Linespedia`,
     description: plainText,
     openGraph: {
-      title: result.title,
+      title: result.writing.title,
       description: plainText,
       type: "article",
-      images: [{ url: ogImageUrl, width: 1200, height: 1200, alt: `${result.title} on Linespedia` }],
+      images: [{ url: ogImageUrl, width: 1200, height: 1200, alt: `${result.writing.title} on Linespedia` }],
     },
     twitter: {
       card: "summary_large_image",
-      title: result.title,
+      title: result.writing.title,
       description: plainText,
       images: [ogImageUrl],
     },
@@ -56,15 +86,7 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
 export default async function PostPage({ params }: PostPageProps) {
   const { slug } = await params;
 
-  // Fetch writing details
-  const [result] = await db
-    .select({
-      writing: writings,
-      author: users,
-    })
-    .from(writings)
-    .innerJoin(users, eq(writings.userId, users.id))
-    .where(eq(writings.slug, slug));
+  const result = await fetchPostBySlug(slug);
 
   if (!result) {
     notFound();
