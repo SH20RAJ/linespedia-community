@@ -24,6 +24,9 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
   return {
     title: `${result.displayName || result.username} (@${result.username}) | Linespedia`,
     description: result.bio || `Read articles, poetry, and thoughts published by @${result.username} on Linespedia.`,
+    alternates: {
+      canonical: `/profile/${result.username}`,
+    },
     openGraph: {
       title: `${result.displayName || result.username} (@${result.username})`,
       description: result.bio || `Read articles, poetry, and thoughts published by @${result.username} on Linespedia.`,
@@ -35,13 +38,24 @@ export async function generateMetadata({ params }: ProfilePageProps): Promise<Me
 export default async function ProfilePage({ params }: ProfilePageProps) {
   const { username } = await params;
 
+  let dbUser: any = null;
+  try {
+    const [row] = await db.select().from(users).where(eq(users.username, username.toLowerCase()));
+    dbUser = row;
+  } catch (e) {
+    console.warn("Error fetching user for schema generation", e);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "ProfilePage",
     "mainEntity": {
       "@type": "Person",
-      "name": username,
+      "name": dbUser?.displayName || username,
       "alternateName": username,
+      "description": dbUser?.bio || `Author profile of @${username} on Linespedia.`,
+      "image": dbUser?.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${username}`,
+      "url": `https://linespedia.com/profile/${username}`,
     },
   };
 

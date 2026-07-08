@@ -22,8 +22,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://linespedia.com"),
   title: "Linespedia Community",
   description: "The cleanest writing-first social platform organized by emotions.",
+  alternates: {
+    canonical: "./",
+  },
 };
 
 export default function RootLayout({

@@ -263,6 +263,56 @@ app.get("/writings/:slug", async (c) => {
   });
 });
 
+async function submitToSearchEngines(slug: string) {
+  const url = `https://linespedia.com/post/${slug}`;
+  const HOST = "linespedia.com";
+  const INDEXNOW_KEY = "65839f7685f34767abd5f5233cb141b4";
+  const BING_API_KEY = process.env.BING_API_KEY;
+
+  console.log(`[SEO API] Auto-submitting URL to IndexNow & Bing: ${url}`);
+
+  try {
+    const res = await fetch("https://api.indexnow.org/indexnow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json; charset=utf-8" },
+      body: JSON.stringify({
+        host: HOST,
+        key: INDEXNOW_KEY,
+        keyLocation: `https://${HOST}/${INDEXNOW_KEY}.txt`,
+        urlList: [url]
+      })
+    });
+    console.log(`[SEO API] IndexNow Response status: ${res.status}`);
+  } catch (e) {
+    console.error("[SEO API] IndexNow submission error:", e);
+  }
+
+  if (BING_API_KEY) {
+    try {
+      const res = await fetch(`https://ssl.bing.com/webmaster/api.svc/json/SubmitUrlbatch?apikey=${BING_API_KEY}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+        body: JSON.stringify({
+          siteUrl: `https://${HOST}`,
+          urlList: [url]
+        })
+      });
+      console.log(`[SEO API] Bing submission response status: ${res.status}`);
+    } catch (e) {
+      console.error("[SEO API] Bing Webmaster API submission error:", e);
+    }
+  }
+}
+
+function fireAndForgetSEO(c: any, slug: string) {
+  const submitPromise = submitToSearchEngines(slug);
+  if (c.executionCtx?.waitUntil) {
+    c.executionCtx.waitUntil(submitPromise);
+  } else {
+    submitPromise.catch((err) => console.error("Error in background SEO submit:", err));
+  }
+}
+
 // Create writing
 const createWritingSchema = z.object({
   title: z.string().min(1),
@@ -318,6 +368,10 @@ app.post("/writings", async (c) => {
     })
     .returning();
 
+  if (!isDraft) {
+    fireAndForgetSEO(c, slug);
+  }
+
   return c.json({ data: newWriting });
 });
 
@@ -349,6 +403,10 @@ app.put("/writings/:id", async (c) => {
     .set(updateFields)
     .where(eq(writings.id, id))
     .returning();
+
+  if (updated.isDraft === false) {
+    fireAndForgetSEO(c, updated.slug);
+  }
 
   return c.json({ data: updated });
 });

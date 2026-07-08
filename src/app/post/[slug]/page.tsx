@@ -69,6 +69,9 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   return {
     title: `${result.writing.title} | Linespedia`,
     description: plainText,
+    alternates: {
+      canonical: `/post/${result.writing.slug}`,
+    },
     openGraph: {
       title: result.writing.title,
       description: plainText,
@@ -188,9 +191,15 @@ export default async function PostPage({ params }: PostPageProps) {
     ? dbReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews
     : 5.0;
 
+  const isPoetry = ["poetry", "poem", "shayari", "lyrics"].some(
+    (kw) =>
+      result.writing.primaryEmotion?.toLowerCase() === kw ||
+      result.writing.tags?.some((t: string) => t.toLowerCase().includes(kw))
+  ) || true;
+
   const jsonLd: any = {
     "@context": "https://schema.org",
-    "@type": "Article",
+    "@type": isPoetry ? "Poem" : "Article",
     "headline": result.writing.title,
     "description": result.writing.content.replace(/<[^>]*>/g, "").slice(0, 160),
     "datePublished": result.writing.publishedAt?.toISOString(),
@@ -200,6 +209,7 @@ export default async function PostPage({ params }: PostPageProps) {
       "name": result.author.displayName || result.author.username,
       "url": `https://linespedia.com/profile/${result.author.username}`,
     },
+    "text": result.writing.content.replace(/<[^>]*>/g, ""),
   };
 
   if (totalReviews > 0) {
@@ -227,12 +237,47 @@ export default async function PostPage({ params }: PostPageProps) {
     }));
   }
 
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://linespedia.com",
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Explore",
+        "item": "https://linespedia.com/explore",
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": result.writing.primaryEmotion,
+        "item": `https://linespedia.com/emotion/${result.writing.primaryEmotion.toLowerCase()}`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": result.writing.title,
+        "item": `https://linespedia.com/post/${result.writing.slug}`,
+      },
+    ],
+  };
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      {/* Schema.org Article metadata */}
+      {/* Schema.org Poem/Article and Breadcrumb metadata */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
       <article className="space-y-6">
