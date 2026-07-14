@@ -57,7 +57,7 @@ async function getOrCreateDbUser(c: any) {
 async function generateUniqueSlug(title: string): Promise<string> {
   const baseSlug = title
     .toLowerCase()
-    .replace(/[^a-z0-9\u0900-\u097F\u0600-\u06FF\s-]/g, "")
+    .replace(/[^a-z0-9\s-_]/g, "")
     .trim()
     .replace(/\s+/g, "-")
     .replace(/-+/g, "-");

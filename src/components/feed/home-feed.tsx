@@ -15,9 +15,28 @@ interface HomeFeedProps {
   initialFeedType?: "latest" | "trending" | "following" | "for-you";
 }
 
-export function HomeFeed({ initialFeedType = "trending" }: HomeFeedProps) {
-  const [feedType, setFeedType] = React.useState(initialFeedType);
+export function HomeFeed({ initialFeedType = "for-you" }: HomeFeedProps) {
+  const [feedType, setFeedType] = React.useState<string>(initialFeedType);
   const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const feed = params.get("feed");
+      if (feed && ["trending", "latest", "following", "for-you"].includes(feed)) {
+        setFeedType(feed);
+      }
+    }
+  }, []);
+
+  const handleFeedChange = (newVal: string) => {
+    setFeedType(newVal);
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      params.set("feed", newVal);
+      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+    }
+  };
 
   const getKey = (pageIndex: number, previousPageData: any) => {
     if (previousPageData && !previousPageData.length) return null;
@@ -74,7 +93,7 @@ export function HomeFeed({ initialFeedType = "trending" }: HomeFeedProps) {
             </Link>
           </div>
 
-          <Tabs value={feedType} onValueChange={setFeedType} className="w-full">
+          <Tabs value={feedType} onValueChange={handleFeedChange} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted/20">
               <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
               <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
