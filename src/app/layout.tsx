@@ -8,6 +8,7 @@ import { Navigation } from "@/components/common/navigation";
 import { CmdKDialog } from "@/components/common/cmd-k";
 import { Suspense } from "react";
 import { GlobalAudioPlayer } from "@/components/common/global-audio-player";
+import Link from "next/link";
 
 const jetbrainsMono = { variable: "font-mono" };
 const geistSans = { variable: "font-sans" };
@@ -73,11 +74,12 @@ export default function RootLayout({
                   <div className="mx-auto flex flex-col items-center justify-between gap-4 md:h-14 md:flex-row max-w-7xl px-4 sm:px-6 lg:px-8 text-xs text-muted-foreground">
                     <p>&copy; 2026 linespedia. All rights reserved.</p>
                     <div className="flex gap-4">
+                      <Link href="/products" className="hover:text-foreground">Products</Link>
                       <a href="https://library.linespedia.com/" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Library</a>
-                      <a href="/about" className="hover:text-foreground">About</a>
-                      <a href="/privacy" className="hover:text-foreground">Privacy</a>
-                      <a href="/terms" className="hover:text-foreground">Terms</a>
-                      <a href="/contact" className="hover:text-foreground">Contact</a>
+                      <Link href="/about" className="hover:text-foreground">About</Link>
+                      <Link href="/privacy" className="hover:text-foreground">Privacy</Link>
+                      <Link href="/terms" className="hover:text-foreground">Terms</Link>
+                      <Link href="/contact" className="hover:text-foreground">Contact</Link>
                     </div>
                   </div>
                 </footer>

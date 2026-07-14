@@ -95,10 +95,10 @@ export function HomeFeed({ initialFeedType = "for-you" }: HomeFeedProps) {
 
           <Tabs value={feedType} onValueChange={handleFeedChange} className="w-full">
             <TabsList className="grid w-full grid-cols-4 bg-muted/20">
-              <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
+              <TabsTrigger value="for-you" className="text-xs">For You</TabsTrigger>
               <TabsTrigger value="latest" className="text-xs">Latest</TabsTrigger>
               <TabsTrigger value="following" className="text-xs">Following</TabsTrigger>
-              <TabsTrigger value="for-you" className="text-xs">For You</TabsTrigger>
+              <TabsTrigger value="trending" className="text-xs">Trending</TabsTrigger>
             </TabsList>
           </Tabs>
 
