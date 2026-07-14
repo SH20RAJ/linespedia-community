@@ -7,12 +7,7 @@ import Providers from "@/components/common/providers";
 import { Navigation } from "@/components/common/navigation";
 import { CmdKDialog } from "@/components/common/cmd-k";
 import { Suspense } from "react";
-import dynamic from "next/dynamic";
-
-const GlobalAudioPlayer = dynamic(
-  () => import("@/components/common/global-audio-player").then((mod) => mod.GlobalAudioPlayer),
-  { ssr: false }
-);
+import { GlobalAudioPlayer } from "@/components/common/global-audio-player";
 
 const jetbrainsMono = { variable: "font-mono" };
 const geistSans = { variable: "font-sans" };

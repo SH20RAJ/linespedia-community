@@ -786,9 +786,10 @@ async function main() {
   
   for (const writing of WRITINGS_DATA) {
     const slug = writing.title.toLowerCase()
-      .replace(/[^a-z0-9\u0900-\u097F]+/g, "-") // preserve hindi characters or convert them cleanly
-      .replace(/-+/g, "-")
-      .trim();
+      .replace(/[^a-z0-9\s-_]+/g, "")
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
 
     // Check if writing already exists by title or slug
     const [existing] = await db.select().from(writings).where(eq(writings.slug, slug));
