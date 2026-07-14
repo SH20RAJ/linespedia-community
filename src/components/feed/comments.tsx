@@ -102,9 +102,9 @@ export function CommentsSection({ writingId }: CommentsProps) {
       hasLiked: false,
       user: {
         id: hexclaveUser.id,
-        username: hexclaveUser.username,
-        displayName: hexclaveUser.displayName || hexclaveUser.username,
-        avatar: hexclaveUser.avatar || null,
+        username: (hexclaveUser as any).username || (hexclaveUser.displayName ? hexclaveUser.displayName.toLowerCase().replace(/\s+/g, "") : "user"),
+        displayName: hexclaveUser.displayName || "User",
+        avatar: (hexclaveUser as any).avatar || null,
       },
       replies: [],
     };
