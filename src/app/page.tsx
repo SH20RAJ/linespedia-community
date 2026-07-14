@@ -25,7 +25,12 @@ export default function HomePage() {
     "@type": "WebSite",
     "name": "Linespedia Community",
     "url": "https://linespedia.com",
-    "description": "The cleanest writing-first social platform organized by emotions.",
+    "description": "The cleanest writing-first social platform organized by emotions. Read, write, and feel poems, stories, and shayari.",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://linespedia.com/explore?search={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
   };
 
   return (

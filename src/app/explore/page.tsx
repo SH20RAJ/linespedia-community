@@ -23,9 +23,31 @@ export default function ExplorePage() {
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
-    "name": "Explore Emotions",
-    "description": "Browse writings by core emotions and categories.",
+    "name": "Explore Emotions | Linespedia",
+    "description": "Browse classical and contemporary poems, ghazals, dohe, and shayari categorized by core emotional wavebands.",
     "url": "https://linespedia.com/explore",
+    "about": [
+      {
+        "@type": "Thing",
+        "name": "Love Poetry",
+        "description": "Romantic poems and shayaris expressing deep affection."
+      },
+      {
+        "@type": "Thing",
+        "name": "Sad Ghazals",
+        "description": "Melancholic verses of heartbreak, longing, and grief."
+      },
+      {
+        "@type": "Thing",
+        "name": "Motivational Poems",
+        "description": "Inspiring literature and thoughts on strength and courage."
+      },
+      {
+        "@type": "Thing",
+        "name": "Peaceful Dohe",
+        "description": "Mindfulness, serene dohas, and philosophical reflections."
+      }
+    ]
   };
 
   return (

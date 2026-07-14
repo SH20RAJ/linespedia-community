@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { HexclaveProvider, HexclaveTheme } from "@hexclave/next";
@@ -9,17 +8,9 @@ import { Navigation } from "@/components/common/navigation";
 import { CmdKDialog } from "@/components/common/cmd-k";
 import { Suspense } from "react";
 
-const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const jetbrainsMono = { variable: "font-mono" };
+const geistSans = { variable: "font-sans" };
+const geistMono = { variable: "font-mono" };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://linespedia.com"),

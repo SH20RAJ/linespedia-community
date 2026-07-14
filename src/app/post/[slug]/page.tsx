@@ -52,6 +52,23 @@ async function fetchPostBySlug(slug: string) {
   return matched || null;
 }
 
+export const revalidate = 60; // Cache post pages for 60 seconds at the edge
+
+export async function generateStaticParams() {
+  try {
+    const list = await db
+      .select({ slug: writings.slug })
+      .from(writings)
+      .where(eq(writings.isDraft, false))
+      .orderBy(desc(writings.views))
+      .limit(100);
+    return list.map((w) => ({ slug: w.slug }));
+  } catch (e) {
+    console.warn("Could not pre-render static params", e);
+    return [];
+  }
+}
+
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await fetchPostBySlug(slug);
@@ -104,17 +121,29 @@ export default async function PostPage({ params }: PostPageProps) {
   };
   const ogImageUrl = emotionOgImages[result.writing.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
 
-  // Increment views directly in D1/Postgres on load
-  await db
-    .update(writings)
+  // 1. Increment views in the background (Non-blocking)
+  db.update(writings)
     .set({ views: result.writing.views + 1 })
-    .where(eq(writings.id, result.writing.id));
+    .where(eq(writings.id, result.writing.id))
+    .catch((e) => console.error("Error updating views:", e));
 
-  // Query Parent writing if any
-  let parentWriting = null;
-  if (result.writing.parentWritingId) {
-    const [p] = await db
+  // 2. Load all secondary data in parallel
+  const [parentWritingRows, childDuets, dbReactions, related, dbReviews] = await Promise.all([
+    result.writing.parentWritingId
+      ? db
+          .select({
+            title: writings.title,
+            slug: writings.slug,
+            authorName: users.displayName,
+            authorUsername: users.username,
+          })
+          .from(writings)
+          .innerJoin(users, eq(writings.userId, users.id))
+          .where(eq(writings.id, result.writing.parentWritingId))
+      : Promise.resolve([]),
+    db
       .select({
+        id: writings.id,
         title: writings.title,
         slug: writings.slug,
         authorName: users.displayName,
@@ -122,69 +151,51 @@ export default async function PostPage({ params }: PostPageProps) {
       })
       .from(writings)
       .innerJoin(users, eq(writings.userId, users.id))
-      .where(eq(writings.id, result.writing.parentWritingId));
-    parentWriting = p || null;
-  }
+      .where(and(eq(writings.parentWritingId, result.writing.id), eq(writings.isDraft, false)))
+      .limit(5),
+    db
+      .select({
+        count: sql<number>`count(*)`,
+        type: reactions.type,
+      })
+      .from(reactions)
+      .where(eq(reactions.writingId, result.writing.id))
+      .groupBy(reactions.type),
+    db
+      .select({
+        writing: writings,
+        author: users,
+      })
+      .from(writings)
+      .innerJoin(users, eq(writings.userId, users.id))
+      .where(
+        and(
+          eq(writings.primaryEmotion, result.writing.primaryEmotion),
+          eq(writings.isDraft, false),
+          sql`${writings.id} != ${result.writing.id}`
+        )
+      )
+      .orderBy(desc(writings.publishedAt))
+      .limit(3),
+    db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        content: reviews.content,
+        createdAt: reviews.createdAt,
+        user: users,
+      })
+      .from(reviews)
+      .innerJoin(users, eq(reviews.userId, users.id))
+      .where(eq(reviews.writingId, result.writing.id))
+  ]);
 
-  // Query Child duets if any
-  const childDuets = await db
-    .select({
-      id: writings.id,
-      title: writings.title,
-      slug: writings.slug,
-      authorName: users.displayName,
-      authorUsername: users.username,
-    })
-    .from(writings)
-    .innerJoin(users, eq(writings.userId, users.id))
-    .where(and(eq(writings.parentWritingId, result.writing.id), eq(writings.isDraft, false)))
-    .limit(5);
-
-  // Get aggregated reaction counts
-  const dbReactions = await db
-    .select({
-      count: sql<number>`count(*)`,
-      type: reactions.type,
-    })
-    .from(reactions)
-    .where(eq(reactions.writingId, result.writing.id))
-    .groupBy(reactions.type);
+  const parentWriting = parentWritingRows[0] || null;
 
   const reactionsMap = dbReactions.reduce((acc, curr) => {
     acc[curr.type] = Number(curr.count);
     return acc;
   }, {} as Record<string, number>);
-
-  // Fetch up to 3 related writings (same primaryEmotion, excluding current)
-  const related = await db
-    .select({
-      writing: writings,
-      author: users,
-    })
-    .from(writings)
-    .innerJoin(users, eq(writings.userId, users.id))
-    .where(
-      and(
-        eq(writings.primaryEmotion, result.writing.primaryEmotion),
-        eq(writings.isDraft, false),
-        sql`${writings.id} != ${result.writing.id}`
-      )
-    )
-    .orderBy(desc(writings.publishedAt))
-    .limit(3);
-
-  // Query reviews
-  const dbReviews = await db
-    .select({
-      id: reviews.id,
-      rating: reviews.rating,
-      content: reviews.content,
-      createdAt: reviews.createdAt,
-      user: users,
-    })
-    .from(reviews)
-    .innerJoin(users, eq(reviews.userId, users.id))
-    .where(eq(reviews.writingId, result.writing.id));
 
   const totalReviews = dbReviews.length;
   const avgRating = totalReviews > 0

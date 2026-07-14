@@ -150,51 +150,76 @@ app.get("/writings", async (c) => {
   let orderedQuery;
   if (feedType === "trending") {
     orderedQuery = queryBuilder.orderBy(desc(writings.views), desc(writings.createdAt));
+  } else if (feedType === "for-you") {
+    // Dynamic randomized feed selection for fresh user experience on every reload
+    orderedQuery = queryBuilder.orderBy(sql`random()`);
   } else {
     orderedQuery = queryBuilder.orderBy(desc(writings.createdAt));
   }
 
   const results = await orderedQuery.limit(limit).offset(offset);
 
-  // Enhance with reactions & bookmarks for current user
-  const enhanced = await Promise.all(
-    results.map(async (item) => {
-      const [userReaction] = dbUser
-        ? await db
+  // Batch query user interactions to avoid N+1 query loops
+  const writingIds = results.map((item) => item.writing.id);
+
+  let userReactionsList: any[] = [];
+  let userBookmarksList: any[] = [];
+  let reactionCountsList: any[] = [];
+
+  if (writingIds.length > 0) {
+    const [rxList, bkList, countsList] = await Promise.all([
+      dbUser
+        ? db
             .select()
             .from(reactions)
-            .where(and(eq(reactions.userId, dbUser.id), eq(reactions.writingId, item.writing.id)))
-        : [];
-      
-      const [userBookmark] = dbUser
-        ? await db
+            .where(and(eq(reactions.userId, dbUser.id), inArray(reactions.writingId, writingIds)))
+        : Promise.resolve([]),
+      dbUser
+        ? db
             .select()
             .from(bookmarks)
-            .where(and(eq(bookmarks.userId, dbUser.id), eq(bookmarks.writingId, item.writing.id)))
-        : [];
-
-      const reactionCounts = await db
+            .where(and(eq(bookmarks.userId, dbUser.id), inArray(bookmarks.writingId, writingIds)))
+        : Promise.resolve([]),
+      db
         .select({
+          writingId: reactions.writingId,
           count: sql<number>`count(*)`,
           type: reactions.type,
         })
         .from(reactions)
-        .where(eq(reactions.writingId, item.writing.id))
-        .groupBy(reactions.type);
+        .where(inArray(reactions.writingId, writingIds))
+        .groupBy(reactions.writingId, reactions.type)
+    ]);
+    userReactionsList = rxList;
+    userBookmarksList = bkList;
+    reactionCountsList = countsList;
+  }
 
-      return {
-        ...item.writing,
-        author: item.author,
-        userReaction: userReaction?.type || null,
-        isBookmarked: !!userBookmark,
-        bookmarkFolder: userBookmark?.folderName || null,
-        reactions: reactionCounts.reduce((acc, curr) => {
-          acc[curr.type] = Number(curr.count);
-          return acc;
-        }, {} as Record<string, number>),
-      };
-    })
-  );
+  const userReactionsMap = new Map(userReactionsList.map((r) => [r.writingId, r.type]));
+  const userBookmarksMap = new Map(userBookmarksList.map((b) => [b.writingId, b.folderName]));
+
+  const reactionCountsMap = new Map<string, Record<string, number>>();
+  for (const rc of reactionCountsList) {
+    if (!reactionCountsMap.has(rc.writingId)) {
+      reactionCountsMap.set(rc.writingId, {});
+    }
+    reactionCountsMap.get(rc.writingId)![rc.type] = Number(rc.count);
+  }
+
+  const enhanced = results.map((item) => {
+    const rx = userReactionsMap.get(item.writing.id) || null;
+    const bk = userBookmarksMap.get(item.writing.id) || null;
+    const rCounts = reactionCountsMap.get(item.writing.id) || {};
+
+    return {
+      ...item.writing,
+      author: item.author,
+      userReaction: rx,
+      isBookmarked: !!bk,
+      bookmarkFolder: bk,
+      reactions: rCounts,
+    };
+  });
 
   return c.json({ data: enhanced });
 });
