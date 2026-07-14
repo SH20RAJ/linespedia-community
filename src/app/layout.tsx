@@ -14,10 +14,34 @@ const geistMono = { variable: "font-mono" };
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://linespedia.com"),
-  title: "Linespedia Community",
-  description: "The cleanest writing-first social platform organized by emotions.",
+  title: {
+    default: "Linespedia Community | Read & Write Poems, Shayari, and Stories",
+    template: "%s | Linespedia",
+  },
+  description: "Read, write, and feel poems, stories, and shayari. Organized by core human emotions like love, sadness, hope, peace, and motivation.",
+  keywords: ["poetry", "shayari", "poems", "stories", "quotes", "literature", "hindi shayari", "urdu poetry", "linespedia"],
   alternates: {
     canonical: "./",
+  },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://linespedia.com",
+    siteName: "Linespedia",
+    images: [
+      {
+        url: "/og-main.png",
+        width: 1200,
+        height: 630,
+        alt: "Linespedia Community",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Linespedia Community | Read & Write Poems, Shayari, and Stories",
+    description: "Read, write, and feel poems, stories, and shayari. Organized by core human emotions.",
+    images: ["/og-main.png"],
   },
 };
 

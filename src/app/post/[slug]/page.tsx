@@ -23,6 +23,7 @@ interface PostPageProps {
 }
 
 async function fetchPostBySlug(slug: string) {
+  const decoded = decodeURIComponent(slug);
   const [exactResult] = await db
     .select({
       writing: writings,
@@ -30,12 +31,12 @@ async function fetchPostBySlug(slug: string) {
     })
     .from(writings)
     .innerJoin(users, eq(writings.userId, users.id))
-    .where(eq(writings.slug, slug));
+    .where(eq(writings.slug, decoded));
 
   if (exactResult) return exactResult;
 
   // Try fallback query: normalize slug by converting all underscores to hyphens
-  const prefix = slug.slice(0, 30);
+  const prefix = decoded.slice(0, 30);
   const candidates = await db
     .select({
       writing: writings,
@@ -45,7 +46,7 @@ async function fetchPostBySlug(slug: string) {
     .innerJoin(users, eq(writings.userId, users.id))
     .where(like(writings.slug, `${prefix}%`));
 
-  const targetNormalized = slug.toLowerCase().replace(/_/g, "-");
+  const targetNormalized = decoded.toLowerCase().replace(/_/g, "-");
   const matched = candidates.find(
     (c) => c.writing.slug.toLowerCase().replace(/_/g, "-") === targetNormalized
   );

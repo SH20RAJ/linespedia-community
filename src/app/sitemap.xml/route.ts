@@ -45,7 +45,7 @@ export async function GET() {
     .map(
       (post) => `
   <url>
-    <loc>https://linespedia.com/post/${post.slug}</loc>
+    <loc>https://linespedia.com/post/${encodeURIComponent(post.slug)}</loc>
     <lastmod>${new Date(post.updatedAt).toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
