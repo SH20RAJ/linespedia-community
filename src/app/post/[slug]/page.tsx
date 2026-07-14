@@ -177,7 +177,7 @@ export default async function PostPage({ params }: PostPageProps) {
         )
       )
       .orderBy(desc(writings.publishedAt))
-      .limit(3),
+      .limit(12),
     db
       .select({
         id: reviews.id,
@@ -373,7 +373,7 @@ export default async function PostPage({ params }: PostPageProps) {
             />
             <Link
               href={`/create?duetOf=${result.writing.id}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-none text-xs font-mono font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/10 h-8 px-3"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-emerald-500/35 text-emerald-500 hover:bg-emerald-500/10 hover:scale-105 active:scale-95 h-9 px-4 bg-emerald-500/5 cursor-pointer"
             >
               <GitFork className="h-3.5 w-3.5" />
               Duet
@@ -434,12 +434,12 @@ export default async function PostPage({ params }: PostPageProps) {
         {related.length > 0 && (
           <div className="space-y-4 pt-6 border-t border-border/20 font-mono">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Related Writings ({result.writing.primaryEmotion})</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {related.map((item) => (
                 <Link
                   key={item.writing.id}
                   href={`/post/${item.writing.slug}`}
-                  className="block p-4 border border-border/40 hover:border-border transition-colors bg-muted/5 space-y-2 hover:bg-muted/10"
+                  className="block p-4 border border-border/40 hover:border-border transition-all hover:scale-[1.02] duration-300 bg-muted/5 space-y-2 hover:bg-muted/10"
                 >
                   <h4 className="text-xs font-bold truncate text-foreground">{item.writing.title}</h4>
                   <p className="text-[10px] text-muted-foreground truncate">

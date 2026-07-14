@@ -87,7 +87,7 @@ export function BookmarkButton({ writingId, initialBookmarked }: BookmarkButtonP
       onClick={handleBookmark}
       disabled={isSubmitting}
       title={bookmarked ? "Remove Bookmark" : "Save Bookmark"}
-      className="h-8 gap-1.5 font-mono text-[10px] uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      className="h-9 px-4 gap-1.5 rounded-full font-mono text-xs font-medium hover:scale-105 active:scale-95 transition-all text-muted-foreground hover:text-foreground border border-border/40 hover:bg-muted/10 cursor-pointer"
     >
       {bookmarked ? (
         <>
