@@ -53,6 +53,8 @@ export const writings = pgTable(
     index("primary_emotion_idx").on(table.primaryEmotion),
     index("views_idx").on(table.views),
     index("published_at_idx").on(table.publishedAt),
+    index("parent_writing_idx").on(table.parentWritingId),
+    index("language_idx").on(table.language),
   ]
 );
 
@@ -115,6 +117,7 @@ export const comments = pgTable(
   (table) => [
     index("writing_comments_idx").on(table.writingId),
     index("parent_comments_idx").on(table.parentId),
+    index("comment_created_at_idx").on(table.createdAt),
   ]
 );
 

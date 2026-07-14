@@ -102,6 +102,7 @@ app.get("/writings", async (c) => {
   const tag = c.req.query("tag");
   const lang = c.req.query("language");
   const query = c.req.query("query");
+  const userId = c.req.query("userId");
   const feedType = c.req.query("feedType") || "latest"; // latest, trending, following, for-you
   const limit = parseInt(c.req.query("limit") || "10");
   const offset = parseInt(c.req.query("offset") || "0");
@@ -110,6 +111,9 @@ app.get("/writings", async (c) => {
 
   let conditions: any[] = [eq(writings.isDraft, false)];
 
+  if (userId) {
+    conditions.push(eq(writings.userId, userId));
+  }
   if (emotion) {
     conditions.push(eq(writings.primaryEmotion, emotion));
   }

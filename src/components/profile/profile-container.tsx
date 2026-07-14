@@ -37,26 +37,50 @@ export function ProfileContainer({ username }: ProfileContainerProps) {
 
   // Fetch writings of this user using SWR
   const { data: writingsResult, isLoading: isWritingsLoading } = useSWR(
-    profile?.id ? `/api/v1/writings?query=&limit=50` : null,
+    profile?.id ? `/api/v1/writings?userId=${profile.id}&limit=50` : null,
     async (url) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load writings");
       const json = (await res.json()) as any;
-      // Filter locally for this user
-      return (json.data || []).filter((w: any) => w.userId === profile.id);
+      return json.data || [];
     }
   );
 
   const posts = writingsResult || [];
 
   const handleFollow = async () => {
+    if (!profile) return;
+    const previousProfile = { ...profile };
+
+    // Optimistically toggle isFollowing and adjust followersCount
+    const nextFollowing = !profile.isFollowing;
+    const nextFollowersCount = profile.followersCount + (nextFollowing ? 1 : -1);
+
+    mutateProfile(
+      {
+        ...profile,
+        isFollowing: nextFollowing,
+        followersCount: nextFollowersCount,
+      },
+      { revalidate: false }
+    );
+
     try {
       const res = await fetch(`/api/v1/users/${profile.id}/follow`, { method: "POST" });
       if (!res.ok) throw new Error("Failed to follow");
       const data = await res.json() as any;
+      
+      mutateProfile(
+        {
+          ...profile,
+          isFollowing: data.following,
+          followersCount: data.followersCount,
+        },
+        { revalidate: true }
+      );
       toast.success(data.following ? `Followed @${profile.username}` : `Unfollowed @${profile.username}`);
-      mutateProfile();
     } catch (e: any) {
+      mutateProfile(previousProfile, { revalidate: true });
       toast.error(e.message || "Failed to follow");
     }
   };

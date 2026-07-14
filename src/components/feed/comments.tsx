@@ -35,6 +35,45 @@ export function CommentsSection({ writingId }: CommentsProps) {
   const comments = commentsData?.data || [];
 
   const handleLike = async (commentId: string) => {
+    if (!hexclaveUser) {
+      toast.error("Please sign in to like comments");
+      return;
+    }
+    const previousData = { ...commentsData };
+
+    const updatedData = {
+      ...commentsData,
+      data: comments.map((c: any) => {
+        if (c.id === commentId) {
+          const nextLiked = !c.hasLiked;
+          return {
+            ...c,
+            hasLiked: nextLiked,
+            likesCount: (c.likesCount || 0) + (nextLiked ? 1 : -1),
+          };
+        }
+        if (c.replies && c.replies.length > 0) {
+          return {
+            ...c,
+            replies: c.replies.map((r: any) => {
+              if (r.id === commentId) {
+                const nextLiked = !r.hasLiked;
+                return {
+                  ...r,
+                  hasLiked: nextLiked,
+                  likesCount: (r.likesCount || 0) + (nextLiked ? 1 : -1),
+                };
+              }
+              return r;
+            }),
+          };
+        }
+        return c;
+      }),
+    };
+
+    mutate(updatedData, { revalidate: false });
+
     try {
       const res = await fetch(`/api/v1/comments/${commentId}/like`, {
         method: "POST",
@@ -42,11 +81,61 @@ export function CommentsSection({ writingId }: CommentsProps) {
       if (!res.ok) throw new Error("Failed to like comment");
       mutate();
     } catch (e: any) {
+      mutate(previousData, { revalidate: true });
       toast.error(e.message || "Failed to like comment");
     }
   };
 
   const handlePost = async ({ content, parentId }: { content: string; parentId?: string | null }) => {
+    if (!hexclaveUser) return;
+    const previousData = { ...commentsData };
+
+    const tempId = "temp-" + Date.now();
+    const newComment = {
+      id: tempId,
+      content,
+      parentId: parentId || null,
+      writingId,
+      createdAt: new Date().toISOString(),
+      userId: hexclaveUser.id,
+      likesCount: 0,
+      hasLiked: false,
+      user: {
+        id: hexclaveUser.id,
+        username: hexclaveUser.username,
+        displayName: hexclaveUser.displayName || hexclaveUser.username,
+        avatar: hexclaveUser.avatar || null,
+      },
+      replies: [],
+    };
+
+    let nextData;
+    if (parentId) {
+      nextData = {
+        ...commentsData,
+        data: comments.map((c: any) => {
+          if (c.id === parentId) {
+            return {
+              ...c,
+              replies: [...(c.replies || []), newComment],
+            };
+          }
+          return c;
+        }),
+      };
+    } else {
+      nextData = {
+        ...commentsData,
+        data: [newComment, ...comments],
+      };
+    }
+
+    mutate(nextData, { revalidate: false });
+
+    setCommentText("");
+    setReplyText("");
+    setReplyToId(null);
+
     try {
       const res = await fetch("/api/v1/comments", {
         method: "POST",
@@ -54,23 +143,41 @@ export function CommentsSection({ writingId }: CommentsProps) {
         body: JSON.stringify({ writingId, content, parentId }),
       });
       if (!res.ok) throw new Error("Failed to post comment");
-      setCommentText("");
-      setReplyText("");
-      setReplyToId(null);
       toast.success("Comment posted!");
       mutate();
     } catch (e) {
+      mutate(previousData, { revalidate: true });
       toast.error("Failed to post comment");
     }
   };
 
   const handleDelete = async (commentId: string) => {
+    const previousData = { ...commentsData };
+
+    const nextData = {
+      ...commentsData,
+      data: comments
+        .filter((c: any) => c.id !== commentId)
+        .map((c: any) => {
+          if (c.replies && c.replies.length > 0) {
+            return {
+              ...c,
+              replies: c.replies.filter((r: any) => r.id !== commentId),
+            };
+          }
+          return c;
+        }),
+    };
+
+    mutate(nextData, { revalidate: false });
+
     try {
       const res = await fetch(`/api/v1/comments/${commentId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Failed to delete comment");
       toast.success("Comment deleted");
       mutate();
     } catch (e) {
+      mutate(previousData, { revalidate: true });
       toast.error("Failed to delete comment");
     }
   };
