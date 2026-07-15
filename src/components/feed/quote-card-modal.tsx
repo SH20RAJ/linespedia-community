@@ -207,11 +207,11 @@ export function QuoteCardModal({ content, title, authorName, postUrl, ogImageUrl
         <Share2 className="h-3.5 w-3.5" />
         <span className="hidden sm:inline">Aesthetic Card</span>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl bg-slate-900 border-slate-800 text-slate-100 font-mono text-xs">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-            <Palette className="h-4 w-4 text-indigo-400" />
-            CREATE AESTHETIC SNIPPET CARD
+      <DialogContent className="max-w-2xl bg-background border-border text-foreground font-serif p-6 shadow-2xl rounded-none">
+        <DialogHeader className="border-b border-border/10 pb-3">
+          <DialogTitle className="text-sm font-bold text-foreground flex items-center gap-2 uppercase tracking-wide">
+            <Palette className="h-4 w-4 text-primary" />
+            Create Aesthetic Snippet Card
           </DialogTitle>
         </DialogHeader>
 
@@ -219,28 +219,37 @@ export function QuoteCardModal({ content, title, authorName, postUrl, ogImageUrl
           {/* Controls Left Column */}
           <div className="md:col-span-2 space-y-4">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Snippet Text</label>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase font-mono">Select Snippet Text</label>
               <Textarea
                 value={excerpt}
                 onChange={(e) => setExcerpt(e.target.value)}
-                className="bg-slate-950 border-slate-800 text-xs min-h-[140px] text-slate-300 focus-visible:ring-indigo-500"
+                className="bg-card border-border/60 text-xs min-h-[120px] text-foreground focus-visible:ring-primary font-mono leading-relaxed"
                 placeholder="Paste the verses or lines you want to share..."
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Choose Theme</label>
-              <div className="grid grid-cols-1 gap-2">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase font-mono">Choose Theme</label>
+              <div className="grid grid-cols-2 gap-2">
                 {THEMES.map((theme, idx) => (
                   <button
                     key={theme.name}
                     onClick={() => setSelectedTheme(idx)}
-                    className={`text-left p-2 border transition-all text-[10px] truncate flex items-center gap-2 ${
-                      selectedTheme === idx ? "border-indigo-500 bg-slate-800 font-bold" : "border-slate-800 hover:border-slate-700 bg-slate-950"
+                    className={`relative p-3 border transition-all text-left flex flex-col justify-between h-20 cursor-pointer overflow-hidden rounded-none ${
+                      selectedTheme === idx
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border/60 hover:border-border bg-card hover:bg-muted/5"
                     }`}
                   >
-                    <span className={`w-3 h-3 rounded-full shrink-0 ${theme.class ? theme.class.split(" ")[0] : "bg-slate-600"}`} />
-                    {theme.name}
+                    <div 
+                      className="absolute inset-0 opacity-15 pointer-events-none"
+                      style={theme.type === "gradient" 
+                        ? { backgroundImage: `linear-gradient(135deg, ${theme.colors?.join(", ")})` }
+                        : { backgroundImage: `url(${theme.url})`, backgroundSize: 'cover', backgroundPosition: 'center' }
+                      }
+                    />
+                    <span className="text-[10px] font-bold text-foreground font-serif leading-none z-10">{theme.name}</span>
+                    <span className="text-[8px] font-mono text-muted-foreground uppercase tracking-widest z-10">{theme.type}</span>
                   </button>
                 ))}
               </div>
@@ -250,8 +259,8 @@ export function QuoteCardModal({ content, title, authorName, postUrl, ogImageUrl
           {/* Preview & Action Buttons Right Column */}
           <div className="md:col-span-3 space-y-4 flex flex-col justify-between">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-muted-foreground uppercase">Preview Card</label>
-              <div className="border border-slate-800 bg-slate-950 overflow-hidden flex items-center justify-center aspect-[8/5] w-full relative">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase font-mono">Preview Card</label>
+              <div className="border border-border/40 bg-card overflow-hidden flex items-center justify-center aspect-[8/5] w-full relative shadow-inner">
                 {previewUrl ? (
                   <img
                     src={previewUrl}
@@ -259,26 +268,26 @@ export function QuoteCardModal({ content, title, authorName, postUrl, ogImageUrl
                     className="w-full h-full object-contain select-none"
                   />
                 ) : (
-                  <span className="text-muted-foreground text-[10px]">Generating preview...</span>
+                  <span className="text-muted-foreground text-[10px] font-mono">Generating preview...</span>
                 )}
               </div>
             </div>
 
             {/* Sharing buttons grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <Button onClick={handleCopyText} variant="outline" className="text-xs border-slate-800 hover:bg-slate-800 w-full">
+              <Button onClick={handleCopyText} variant="outline" className="text-xs border-border/60 hover:bg-muted/5 w-full font-mono cursor-pointer">
                 {copied ? <Check className="h-3.5 w-3.5 text-emerald-500 mr-1" /> : <Copy className="h-3.5 w-3.5 mr-1" />}
                 Copy Text
               </Button>
               
-              <Button onClick={handleDownloadImage} className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs w-full">
+              <Button onClick={handleDownloadImage} className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs w-full font-mono cursor-pointer">
                 <Download className="h-3.5 w-3.5 mr-1" />
                 Download
               </Button>
 
               <Button
                 onClick={handlePinterestShare}
-                className="bg-[#bd081c] hover:bg-[#bd081c]/90 text-white text-xs w-full flex items-center justify-center gap-1"
+                className="bg-[#bd081c] hover:bg-[#bd081c]/90 text-white text-xs w-full flex items-center justify-center gap-1 font-mono cursor-pointer"
               >
                 <svg className="h-3.5 w-3.5 fill-current shrink-0" viewBox="0 0 24 24">
                   <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.62 11.16-.1-.95-.2-2.4.04-3.43.22-.93 1.4-5.93 1.4-5.93s-.36-.72-.36-1.77c0-1.66.96-2.9 2.12-2.9 1 0 1.48.75 1.48 1.65 0 1-.64 2.5-.97 3.89-.28 1.17.58 2.12 1.73 2.12 2.08 0 3.68-2.2 3.68-5.37 0-2.8-2.02-4.77-4.9-4.77-3.33 0-5.28 2.5-5.28 5.08 0 1 .39 2.08.88 2.68.1.12.1.22.08.33l-.33 1.34c-.05.2-.18.25-.4.15-1.5-.7-2.43-2.9-2.43-4.66 0-3.8 2.76-7.3 7.97-7.3 4.18 0 7.43 2.98 7.43 6.96 0 4.16-2.62 7.5-6.26 7.5-1.22 0-2.37-.63-2.76-1.37l-.76 2.89c-.28 1.05-1.02 2.37-1.52 3.18C10.13 23.83 11.04 24 12 24c6.63 0 12-5.37 12-12S18.63 0 12 0z"/>

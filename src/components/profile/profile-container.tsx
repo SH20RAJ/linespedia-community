@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import useSWR from "swr";
+import useSWRInfinite from "swr/infinite";
 import { useUser, useHexclaveApp } from "@hexclave/next";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -41,22 +42,49 @@ export function ProfileContainer({ username, initialProfile, initialWritings = [
 
   const profile = profileResult;
 
-  // Fetch writings of this user using SWR
-  const { data: writingsResult, isLoading: isWritingsLoading } = useSWR(
-    profile?.id ? `/api/v1/writings?userId=${profile.id}&limit=50` : null,
-    async (url) => {
+  const observerTarget = React.useRef<HTMLDivElement>(null);
+
+  // Fetch writings of this user using SWRInfinite for dynamic pagination/scroll
+  const getKey = (pageIndex: number, previousPageData: any) => {
+    if (previousPageData && !previousPageData.length) return null;
+    return profile?.id
+      ? `/api/v1/writings?userId=${profile.id}&limit=10&offset=${pageIndex * 10}`
+      : null;
+  };
+
+  const { data: writingsResultData, size, setSize, isValidating, isLoading: isWritingsLoading } = useSWRInfinite(
+    getKey,
+    async (url: string) => {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load writings");
       const json = (await res.json()) as any;
       return json.data || [];
     },
     {
-      fallbackData: initialWritings && initialWritings.length > 0 ? initialWritings : undefined,
+      fallbackData: initialWritings && initialWritings.length > 0 ? [initialWritings] : undefined,
       revalidateOnMount: false,
     }
   );
 
-  const posts = writingsResult || [];
+  const posts = writingsResultData ? writingsResultData.flat() : [];
+  const hasNextPage = writingsResultData && writingsResultData[writingsResultData.length - 1]?.length === 10;
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isValidating) {
+          setSize((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasNextPage, isValidating, setSize]);
 
   const handleFollow = async () => {
     if (!profile) return;
@@ -218,7 +246,20 @@ export function ProfileContainer({ username, initialProfile, initialWritings = [
               <p className="text-xs text-muted-foreground">No published writings yet.</p>
             </div>
           ) : (
-            posts.map((post: any) => <PostCard key={post.id} post={post} />)
+            <div className="space-y-4">
+              {posts.map((post: any) => <PostCard key={post.id} post={post} />)}
+              <div ref={observerTarget} className="flex justify-center py-6">
+                {hasNextPage ? (
+                  <span className="text-[10px] font-mono text-muted-foreground animate-pulse uppercase tracking-widest">
+                    Loading more lines...
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-widest">
+                    End of catalog
+                  </span>
+                )}
+              </div>
+            </div>
           )}
         </TabsContent>
 

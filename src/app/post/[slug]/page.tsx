@@ -11,6 +11,7 @@ import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
 import { ShareButton } from "@/components/feed/share-button";
+import { PinterestPinButton } from "@/components/feed/pinterest-pin-button";
 import { ReviewsSection } from "@/components/feed/reviews";
 import { QuoteCardModal } from "@/components/feed/quote-card-modal";
 import { ZenReadingMode } from "@/components/feed/zen-reading-mode";
@@ -367,6 +368,13 @@ export default async function PostPage({ params }: PostPageProps) {
             </Link>
             <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
             <ShareButton slug={result.writing.slug} postId={result.writing.id} title={result.writing.title} />
+            <PinterestPinButton
+              slug={result.writing.slug}
+              postId={result.writing.id}
+              title={result.writing.title}
+              excerpt={result.writing.content.replace(/<[^>]*>/g, "")}
+              authorName={result.author.displayName || result.author.username}
+            />
           </div>
         </div>
 
