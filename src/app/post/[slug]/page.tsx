@@ -360,10 +360,10 @@ export default async function PostPage({ params }: PostPageProps) {
             />
             <Link
               href={`/create?duetOf=${result.writing.id}`}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-emerald-500/35 text-emerald-500 hover:bg-emerald-500/10 hover:scale-105 active:scale-95 h-9 px-4 bg-emerald-500/5 cursor-pointer"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-emerald-500/35 text-emerald-500 hover:bg-emerald-500/10 hover:scale-105 active:scale-95 h-9 px-3 sm:px-4 bg-emerald-500/5 cursor-pointer"
             >
               <GitFork className="h-3.5 w-3.5" />
-              Duet
+              <span className="hidden sm:inline">Duet</span>
             </Link>
             <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
             <ShareButton slug={result.writing.slug} postId={result.writing.id} title={result.writing.title} />

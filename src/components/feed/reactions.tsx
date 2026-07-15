@@ -162,14 +162,14 @@ export function ReactionsSection({ writingId, initialReactions, initialUserReact
             key={item.type}
             onClick={() => handleReact(item.type)}
             disabled={isSubmitting}
-            className={`h-9 px-4 rounded-full flex items-center justify-center gap-2 border font-mono text-[11px] uppercase tracking-wider transition-all duration-300 cursor-pointer ${
+            className={`h-9 px-3 sm:px-4 rounded-full flex items-center justify-center gap-2 border font-mono text-[11px] uppercase tracking-wider transition-all duration-300 cursor-pointer ${
               isActive 
                 ? colors.activeBg 
                 : `${colors.bg} ${colors.text} ${colors.border} ${colors.hoverBg} hover:scale-105 active:scale-95`
             }`}
           >
             <Icon className="h-4 w-4" />
-            <span>{item.label}</span>
+            <span className="hidden sm:inline">{item.label}</span>
             {count > 0 && <span className="ml-1 font-sans font-bold text-xs">{count}</span>}
           </button>
         );

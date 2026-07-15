@@ -120,9 +120,9 @@ export function ZenReadingMode({ title, authorName, content }: ZenReadingModePro
       if (!val) handleClose();
       else setIsOpen(true);
     }}>
-      <DialogTrigger className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-indigo-500/35 text-indigo-500 hover:bg-indigo-500/10 hover:scale-105 active:scale-95 h-9 px-4 bg-indigo-500/5 cursor-pointer">
+      <DialogTrigger className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-indigo-500/35 text-indigo-500 hover:bg-indigo-500/10 hover:scale-105 active:scale-95 h-9 px-3 sm:px-4 bg-indigo-500/5 cursor-pointer">
         <Sparkles className="h-3.5 w-3.5" />
-        Zen Mode
+        <span className="hidden sm:inline">Zen Mode</span>
       </DialogTrigger>
       
       <DialogContent 

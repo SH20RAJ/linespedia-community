@@ -48,17 +48,17 @@ export function ShareButton({ slug, postId, title }: ShareButtonProps) {
       variant="outline"
       size="sm"
       onClick={handleShare}
-      className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border/40 hover:bg-muted/10 hover:scale-105 active:scale-95 h-9 px-4 cursor-pointer text-muted-foreground hover:text-foreground"
+      className="inline-flex items-center justify-center gap-1.5 rounded-full text-xs font-mono font-medium transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 border border-border/40 hover:bg-muted/10 hover:scale-105 active:scale-95 h-9 px-3 sm:px-4 cursor-pointer text-muted-foreground hover:text-foreground"
     >
       {copied ? (
         <>
           <Check className="h-3.5 w-3.5 text-emerald-500" />
-          <span>Copied</span>
+          <span className="hidden sm:inline">Copied</span>
         </>
       ) : (
         <>
           <Share2 className="h-3.5 w-3.5" />
-          <span>Share</span>
+          <span className="hidden sm:inline">Share</span>
         </>
       )}
     </Button>
