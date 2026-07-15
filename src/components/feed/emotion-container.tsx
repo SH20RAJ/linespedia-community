@@ -14,6 +14,7 @@ import Link from "next/link";
 
 interface EmotionContainerProps {
   emotion: string;
+  initialWritings?: any[];
 }
 
 const SUPPORTED_LANGUAGES = [
@@ -27,7 +28,7 @@ const SUPPORTED_LANGUAGES = [
   { code: "de", label: "GERMAN" },
 ];
 
-export function EmotionContainer({ emotion }: EmotionContainerProps) {
+export function EmotionContainer({ emotion, initialWritings = [] }: EmotionContainerProps) {
   const [feedType, setFeedType] = React.useState("latest"); // latest, trending
   const [selectedLang, setSelectedLang] = React.useState("");
   const observerTarget = React.useRef<HTMLDivElement>(null);
@@ -47,6 +48,10 @@ export function EmotionContainer({ emotion }: EmotionContainerProps) {
       if (!res.ok) throw new Error("Failed to load emotion writings");
       const json = (await res.json()) as any;
       return json.data || [];
+    },
+    {
+      fallbackData: initialWritings && initialWritings.length > 0 && feedType === "latest" && selectedLang === "" ? [initialWritings] : undefined,
+      revalidateOnMount: false,
     }
   );
 

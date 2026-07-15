@@ -151,6 +151,22 @@ export const seedWritings = [
     readingTime: 1,
     tags: ["#goethe", "#peace", "#german"],
   },
+  {
+    title: "Meditations on Impermanence",
+    primaryEmotion: "peace",
+    language: "en",
+    content: `<p>The mind is like a flowing river. Thoughts arise like bubbles and dissolve back into the water.</p><p>Marcus Aurelius wrote: 'Time is a river, a fierce torrent of things that come into being; no sooner is a thing brought to sight than it is swept away and another takes its place, and this too will be swept away.'</p><p>Find stillness in the middle of the torrent.</p>`,
+    readingTime: 2,
+    tags: ["#philosophy", "#stoicism", "#journal", "#wisdom"],
+  },
+  {
+    title: "The Silent Forest (Zen Koan)",
+    primaryEmotion: "peace",
+    language: "en",
+    content: `<p>A student asked the master: 'What is the voice of silence?'</p><p>The master pointed to the cypress tree in the courtyard and said: 'Listen to the sound of its shadows moving as the sun sets.'</p><p>To speak of silence is to lose it. Just listen.</p>`,
+    readingTime: 1,
+    tags: ["#philosophy", "#zen", "#koan", "#silence"],
+  },
 ];
 
 export const authors = [

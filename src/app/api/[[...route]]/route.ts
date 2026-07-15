@@ -96,6 +96,29 @@ app.get("/writings/random", async (c) => {
   return c.json({ data: shuffled });
 });
 
+// Daily featured writing for embed widget
+app.get("/writings/featured-day", async (c) => {
+  const list = await db
+    .select({
+      id: writings.id,
+      title: writings.title,
+      slug: writings.slug,
+      content: writings.content,
+      primaryEmotion: writings.primaryEmotion,
+    })
+    .from(writings)
+    .where(eq(writings.isDraft, false))
+    .orderBy(desc(writings.views))
+    .limit(10);
+
+  if (list.length === 0) {
+    return c.json({ error: "No writings found" }, 404);
+  }
+
+  // Consistent top choice for "Poem of the Day"
+  return c.json({ data: list[0] });
+});
+
 // List writings (Feed)
 app.get("/writings", async (c) => {
   const emotion = c.req.query("emotion");
@@ -400,6 +423,28 @@ app.post("/writings", async (c) => {
 
   if (!isDraft) {
     fireAndForgetSEO(c, slug);
+
+    if (parentWritingId) {
+      try {
+        const [parent] = await db
+          .select({ userId: writings.userId })
+          .from(writings)
+          .where(eq(writings.id, parentWritingId));
+
+        if (parent && parent.userId !== dbUser.id) {
+          await db.insert(notifications).values({
+            id: crypto.randomUUID(),
+            recipientId: parent.userId,
+            actorId: dbUser.id,
+            type: "reply",
+            writingId: id,
+            createdAt: new Date(),
+          });
+        }
+      } catch (e) {
+        console.warn("Failed to dispatch duet notification:", e);
+      }
+    }
   }
 
   return c.json({ data: newWriting });

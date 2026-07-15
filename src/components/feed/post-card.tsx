@@ -84,6 +84,8 @@ export function PostCard({ post }: PostCardProps) {
         </div>
 
         <div className="flex items-center gap-4 text-[10px] text-muted-foreground font-mono">
+          <PostCardReactionButton writingId={post.id} initialReactions={post.reactions || {}} />
+          <PostCardSaveButton writingId={post.id} />
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5 opacity-70" />
             {post.readingTime} min
@@ -92,14 +94,178 @@ export function PostCard({ post }: PostCardProps) {
             <Eye className="h-3.5 w-3.5 opacity-70" />
             {post.views}
           </span>
-          {totalReactions > 0 && (
-            <span className="flex items-center gap-1">
-              <Smile className="h-3.5 w-3.5 opacity-70" />
-              {totalReactions}
-            </span>
-          )}
         </div>
       </div>
     </article>
+  );
+}
+
+import { Heart, Bookmark } from "lucide-react";
+import { useUser, useHexclaveApp } from "@hexclave/next";
+import { toast } from "sonner";
+import useSWR from "swr";
+import * as React from "react";
+
+function PostCardReactionButton({ writingId, initialReactions }: { writingId: string, initialReactions: Record<string, number> }) {
+  const hexclaveUser = useUser();
+  const hexclaveApp = useHexclaveApp();
+
+  const [reactions, setReactions] = React.useState(initialReactions);
+  const [userReaction, setUserReaction] = React.useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const { data: writingData } = useSWR(
+    hexclaveUser ? `/api/v1/writings/${writingId}` : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const json = await res.json() as any;
+      return json.data;
+    }
+  );
+
+  React.useEffect(() => {
+    if (writingData) {
+      if (writingData.reactions) setReactions(writingData.reactions);
+      setUserReaction(writingData.userReaction || null);
+    }
+  }, [writingData]);
+
+  const handleReact = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!hexclaveUser) {
+      toast("Please sign in to react to writings", {
+        action: {
+          label: "Sign In",
+          onClick: () => hexclaveApp.redirectToSignIn(),
+        },
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    const type = "felt_this";
+    const previousReactions = { ...reactions };
+    const previousUserReaction = userReaction;
+    const newReactions = { ...reactions };
+
+    if (previousUserReaction) {
+      newReactions[previousUserReaction] = Math.max(0, (newReactions[previousUserReaction] || 1) - 1);
+    }
+
+    const isUntoggling = previousUserReaction === type;
+    if (isUntoggling) {
+      setUserReaction(null);
+    } else {
+      setUserReaction(type);
+      newReactions[type] = (newReactions[type] || 0) + 1;
+    }
+
+    setReactions(newReactions);
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/v1/writings/${writingId}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setReactions(previousReactions);
+      setUserReaction(previousUserReaction);
+      toast.error("Failed to update reaction");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const hasFelt = userReaction === "felt_this";
+  const total = Object.values(reactions).reduce((a, b) => a + b, 0);
+
+  return (
+    <button
+      onClick={handleReact}
+      disabled={isSubmitting}
+      className={`inline-flex items-center gap-1 hover:scale-105 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer ${hasFelt ? "text-rose-500 hover:text-rose-600" : ""}`}
+    >
+      <Heart className={`h-3.5 w-3.5 ${hasFelt ? "fill-rose-500 stroke-rose-500" : "opacity-70"}`} />
+      <span>{total > 0 ? total : "React"}</span>
+    </button>
+  );
+}
+
+function PostCardSaveButton({ writingId }: { writingId: string }) {
+  const hexclaveUser = useUser();
+  const hexclaveApp = useHexclaveApp();
+
+  const [bookmarked, setBookmarked] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  const { data: bookmarkData } = useSWR(
+    hexclaveUser ? "/api/v1/bookmarks" : null,
+    async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      return res.json() as any;
+    }
+  );
+
+  const isBookmarkedInDb = React.useMemo(() => {
+    if (!bookmarkData?.data) return false;
+    return bookmarkData.data.some((b: any) => b.id === writingId);
+  }, [bookmarkData, writingId]);
+
+  React.useEffect(() => {
+    setBookmarked(isBookmarkedInDb);
+  }, [isBookmarkedInDb]);
+
+  const handleBookmark = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!hexclaveUser) {
+      toast("Please sign in to save writings", {
+        action: {
+          label: "Sign In",
+          onClick: () => hexclaveApp.redirectToSignIn(),
+        },
+      });
+      return;
+    }
+
+    if (isSubmitting) return;
+
+    const prevBookmarked = bookmarked;
+    setBookmarked(!prevBookmarked);
+    setIsSubmitting(true);
+
+    try {
+      const res = await fetch(`/api/v1/writings/${writingId}/bookmark`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setBookmarked(prevBookmarked);
+      toast.error("Failed to update save status");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleBookmark}
+      disabled={isSubmitting}
+      className={`inline-flex items-center gap-1 hover:scale-105 active:scale-95 transition-all text-muted-foreground hover:text-foreground cursor-pointer ${bookmarked ? "text-emerald-500 hover:text-emerald-600" : ""}`}
+    >
+      <Bookmark className={`h-3.5 w-3.5 ${bookmarked ? "fill-emerald-500 stroke-emerald-500" : "opacity-70"}`} />
+      <span>{bookmarked ? "Saved" : "Save"}</span>
+    </button>
   );
 }

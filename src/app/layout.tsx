@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://linespedia.com"),
   title: {
     default: "Linespedia Community | Read & Write Poems, Shayari, and Stories",
-    template: "%s | Linespedia",
+    template: "%s",
   },
   description: "Read, write, and feel poems, stories, and shayari. Organized by core human emotions like love, sadness, hope, peace, and motivation.",
   keywords: ["poetry", "shayari", "poems", "stories", "quotes", "literature", "hindi shayari", "urdu poetry", "linespedia"],

@@ -16,9 +16,11 @@ import Link from "next/link";
 
 interface ProfileContainerProps {
   username: string;
+  initialProfile?: any;
+  initialWritings?: any[];
 }
 
-export function ProfileContainer({ username }: ProfileContainerProps) {
+export function ProfileContainer({ username, initialProfile, initialWritings = [] }: ProfileContainerProps) {
   const hexclaveUser = useUser();
   const hexclaveApp = useHexclaveApp();
 
@@ -30,6 +32,10 @@ export function ProfileContainer({ username }: ProfileContainerProps) {
       if (!res.ok) throw new Error("User not found");
       const json = (await res.json()) as any;
       return json.data;
+    },
+    {
+      fallbackData: initialProfile || undefined,
+      revalidateOnMount: false,
     }
   );
 
@@ -43,6 +49,10 @@ export function ProfileContainer({ username }: ProfileContainerProps) {
       if (!res.ok) throw new Error("Failed to load writings");
       const json = (await res.json()) as any;
       return json.data || [];
+    },
+    {
+      fallbackData: initialWritings && initialWritings.length > 0 ? initialWritings : undefined,
+      revalidateOnMount: false,
     }
   );
 

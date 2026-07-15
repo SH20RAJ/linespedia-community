@@ -96,15 +96,26 @@ export function CreateContainer() {
           setIsLoadingDraft(false);
         });
     } else {
-      const existingDraft = drafts["new-writing"];
-      if (existingDraft) {
-        setTitle(existingDraft.title || "");
-        setContent(existingDraft.content || "");
-        setPrimaryEmotion(existingDraft.primaryEmotion || "");
-        setTagsInput(existingDraft.tags?.join(", ") || "");
+      const prompt = searchParams.get("prompt");
+      const emotionParam = searchParams.get("emotion");
+
+      if (prompt || emotionParam) {
+        if (prompt) setTagsInput(prompt);
+        if (emotionParam) setPrimaryEmotion(emotionParam);
+        if (prompt === "prompt-2026-w29") {
+          setContent("<p>The dust had settled, but the shadow remained. </p>");
+        }
+      } else {
+        const existingDraft = drafts["new-writing"];
+        if (existingDraft) {
+          setTitle(existingDraft.title || "");
+          setContent(existingDraft.content || "");
+          setPrimaryEmotion(existingDraft.primaryEmotion || "");
+          setTagsInput(existingDraft.tags?.join(", ") || "");
+        }
       }
     }
-  }, [recoverId, duetOf]);
+  }, [recoverId, duetOf, searchParams]);
 
   // Auto-save local draft changes (only for new posts, not edits)
   React.useEffect(() => {

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { ExploreContainer } from "@/components/explore/explore-container";
 import { Metadata } from "next";
+import { getInitialTopUsers } from "@/lib/db-queries";
 
 export const metadata: Metadata = {
   title: "Explore Writings | Linespedia",
@@ -19,7 +20,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function ExplorePage() {
+export default async function ExplorePage() {
+  let initialTopWriters: any[] = [];
+  try {
+    initialTopWriters = await getInitialTopUsers();
+  } catch (err) {
+    console.error("Failed to load top authors on server:", err);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "CollectionPage",
@@ -57,7 +65,7 @@ export default function ExplorePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Suspense fallback={<div className="text-center py-16 text-xs text-muted-foreground font-mono">Loading explore...</div>}>
-        <ExploreContainer />
+        <ExploreContainer initialTopWriters={initialTopWriters} />
       </Suspense>
     </>
   );

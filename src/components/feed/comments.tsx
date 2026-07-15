@@ -9,6 +9,7 @@ import useSWR from "swr";
 import { toast } from "sonner";
 import { MessageSquare, CornerDownRight, Trash2, Heart, Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
 
 interface CommentsProps {
   writingId: string;
@@ -206,11 +207,13 @@ export function CommentsSection({ writingId }: CommentsProps) {
       <div className={`space-y-2 py-4 ${isReply ? "pl-8 border-l border-border/20 mt-2" : "border-b border-border/10"}`}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Avatar className="h-6 w-6">
-              <AvatarImage src={comment.user.avatar || ""} />
-              <AvatarFallback className="text-[9px]">{comment.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <span className="text-xs font-bold font-mono">{comment.user.displayName || comment.user.username}</span>
+            <Link href={`/profile/${comment.user.username}`} className="flex items-center gap-2 hover:underline">
+              <Avatar className="h-6 w-6">
+                <AvatarImage src={comment.user.avatar || ""} />
+                <AvatarFallback className="text-[9px]">{comment.user.username.slice(0, 2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <span className="text-xs font-bold font-mono">{comment.user.displayName || comment.user.username}</span>
+            </Link>
             {comment.rating && (
               <span className="flex items-center gap-0.5 text-amber-500 text-[10px] ml-1 bg-amber-500/10 px-1 py-0.2">
                 <Star className="h-2.5 w-2.5 fill-current" />

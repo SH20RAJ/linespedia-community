@@ -39,7 +39,11 @@ const TRENDING_TAGS = [
   "#dailyjournal",
 ];
 
-export function ExploreContainer() {
+interface ExploreContainerProps {
+  initialTopWriters?: any[];
+}
+
+export function ExploreContainer({ initialTopWriters = [] }: ExploreContainerProps) {
   const [searchQuery, setSearchQuery] = React.useState("");
   const [promptText, setPromptText] = React.useState("Write a short poem about a rainy afternoon in Paris, using the word 'reminisce'.");
 
@@ -68,6 +72,10 @@ export function ExploreContainer() {
       if (!res.ok) throw new Error("Failed to load top authors");
       const json = (await res.json()) as any;
       return json.data;
+    },
+    {
+      fallbackData: initialTopWriters && initialTopWriters.length > 0 ? initialTopWriters : undefined,
+      revalidateOnMount: false,
     }
   );
 

@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { EmotionContainer } from "@/components/feed/emotion-container";
 import { Metadata } from "next";
+import { getInitialWritings } from "@/lib/db-queries";
 
 interface EmotionPageProps {
   params: Promise<{ emotion: string }>;
@@ -37,10 +38,49 @@ export async function generateMetadata({ params }: EmotionPageProps): Promise<Me
 
 export default async function EmotionPage({ params }: EmotionPageProps) {
   const { emotion } = await params;
+  const capitalized = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+
+  let initialWritings: any[] = [];
+  try {
+    initialWritings = await getInitialWritings({ emotion, limit: 10 });
+  } catch (err) {
+    console.error("Failed to fetch initial writings for emotion on server:", err);
+  }
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": "https://linespedia.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Explore",
+        "item": "https://linespedia.com/explore"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": capitalized,
+        "item": `https://linespedia.com/emotion/${emotion}`
+      }
+    ]
+  };
 
   return (
-    <Suspense fallback={<div className="text-center py-16 text-xs text-muted-foreground font-mono">Loading emotion feed...</div>}>
-      <EmotionContainer emotion={emotion} />
-    </Suspense>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <Suspense fallback={<div className="text-center py-16 text-xs text-muted-foreground font-mono">Loading emotion feed...</div>}>
+        <EmotionContainer emotion={emotion} initialWritings={initialWritings} />
+      </Suspense>
+    </>
   );
 }

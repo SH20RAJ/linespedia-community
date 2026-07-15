@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { HomeFeed } from "@/components/feed/home-feed";
 import { Metadata } from "next";
+import { getInitialWritings } from "@/lib/db-queries";
 
 export const metadata: Metadata = {
   title: "Linespedia Community",
@@ -19,7 +20,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function HomePage() {
+interface HomePageProps {
+  searchParams: Promise<{ feed?: string }>;
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const resolvedParams = await searchParams;
+  const feedType = resolvedParams.feed || "for-you";
+
+  let initialWritings: any[] = [];
+  try {
+    initialWritings = await getInitialWritings({ feedType, limit: 10 });
+  } catch (err) {
+    console.error("Failed to load initial writings on server:", err);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -40,7 +55,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <Suspense fallback={<div className="text-center py-16 text-xs text-muted-foreground font-mono">Loading feed...</div>}>
-        <HomeFeed />
+        <HomeFeed initialFeedType={feedType as any} initialWritings={initialWritings} />
       </Suspense>
     </>
   );

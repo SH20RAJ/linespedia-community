@@ -13,9 +13,10 @@ import Link from "next/link";
 
 interface HomeFeedProps {
   initialFeedType?: "latest" | "trending" | "following" | "for-you";
+  initialWritings?: any[];
 }
 
-export function HomeFeed({ initialFeedType = "for-you" }: HomeFeedProps) {
+export function HomeFeed({ initialFeedType = "for-you", initialWritings = [] }: HomeFeedProps) {
   const [feedType, setFeedType] = React.useState<string>(initialFeedType);
   const observerTarget = React.useRef<HTMLDivElement>(null);
 
@@ -50,6 +51,10 @@ export function HomeFeed({ initialFeedType = "for-you" }: HomeFeedProps) {
       if (!res.ok) throw new Error("Failed to fetch writings");
       const json = await res.json() as any;
       return json.data || [];
+    },
+    {
+      fallbackData: initialWritings && initialWritings.length > 0 && feedType === initialFeedType ? [initialWritings] : undefined,
+      revalidateOnMount: false,
     }
   );
 
@@ -153,6 +158,42 @@ export function HomeFeed({ initialFeedType = "for-you" }: HomeFeedProps) {
 
         {/* Sidebar widgets */}
         <div className="hidden lg:block space-y-6">
+          {/* Weekly Prompt Challenge */}
+          <div className="border border-border/40 p-4 bg-muted/5 space-y-3 font-mono">
+            <div className="flex items-center gap-2 text-[10px] text-primary font-bold uppercase tracking-wider">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span>Weekly Prompt Challenge</span>
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-xs font-bold text-foreground">The Whispering Walls</h3>
+              <p className="text-[11px] text-muted-foreground leading-normal">
+                Constraint: Must start with "The dust had settled, but the shadow remained."
+              </p>
+            </div>
+            <div className="flex gap-2 pt-1.5">
+              <Link
+                href="/prompts/2026-W29"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "sm",
+                  className: "w-full text-[10px] h-7 font-mono",
+                })}
+              >
+                Read Entries
+              </Link>
+              <Link
+                href="/create?prompt=prompt-2026-w29&emotion=mystery"
+                className={buttonVariants({
+                  variant: "default",
+                  size: "sm",
+                  className: "w-full text-[10px] h-7 font-mono",
+                })}
+              >
+                Write Entry
+              </Link>
+            </div>
+          </div>
+
           {/* Trending emotions */}
           <div className="border border-border/40 p-4 bg-muted/5">
             <h2 className="text-xs font-bold tracking-wider text-muted-foreground uppercase mb-3 flex items-center gap-1.5">

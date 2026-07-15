@@ -10,6 +10,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ReactionsSection } from "@/components/feed/reactions";
 import { CommentsSection } from "@/components/feed/comments";
 import { BookmarkButton } from "@/components/feed/bookmark";
+import { ShareButton } from "@/components/feed/share-button";
 import { ReviewsSection } from "@/components/feed/reviews";
 import { QuoteCardModal } from "@/components/feed/quote-card-modal";
 import { ZenReadingMode } from "@/components/feed/zen-reading-mode";
@@ -55,21 +56,6 @@ async function fetchPostBySlug(slug: string) {
 
 export const revalidate = 60; // Cache post pages for 60 seconds at the edge
 
-export async function generateStaticParams() {
-  try {
-    const list = await db
-      .select({ slug: writings.slug })
-      .from(writings)
-      .where(eq(writings.isDraft, false))
-      .orderBy(desc(writings.views))
-      .limit(100);
-    return list.map((w) => ({ slug: w.slug }));
-  } catch (e) {
-    console.warn("Could not pre-render static params", e);
-    return [];
-  }
-}
-
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {
   const { slug } = await params;
   const result = await fetchPostBySlug(slug);
@@ -82,10 +68,10 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
     hope: "https://linespedia.com/og-hope.png",
     peace: "https://linespedia.com/og-peace.png",
   };
-  const ogImageUrl = emotionOgImages[result.writing.primaryEmotion.toLowerCase()] || "https://linespedia.com/og-main.png";
+  const ogImageUrl = `https://linespedia.com/api/og/${result.writing.id}`;
 
   return {
-    title: `${result.writing.title} | Linespedia`,
+    title: `${result.writing.title}`,
     description: plainText,
     alternates: {
       canonical: `/post/${result.writing.slug}`,
@@ -216,6 +202,7 @@ export default async function PostPage({ params }: PostPageProps) {
     "description": result.writing.content.replace(/<[^>]*>/g, "").slice(0, 160),
     "datePublished": result.writing.publishedAt?.toISOString(),
     "dateModified": result.writing.updatedAt.toISOString(),
+    "genre": result.writing.primaryEmotion,
     "author": {
       "@type": "Person",
       "name": result.author.displayName || result.author.username,
@@ -379,6 +366,7 @@ export default async function PostPage({ params }: PostPageProps) {
               Duet
             </Link>
             <BookmarkButton writingId={result.writing.id} initialBookmarked={false} />
+            <ShareButton slug={result.writing.slug} postId={result.writing.id} title={result.writing.title} />
           </div>
         </div>
 
