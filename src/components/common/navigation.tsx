@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/common/theme-toggle";
 
 export function Navigation() {
   const pathname = usePathname();
@@ -74,7 +75,9 @@ export function Navigation() {
         </div>
 
         {/* Right section: Actions & Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          
           {/* Search Button */}
           <Button
             variant="outline"
